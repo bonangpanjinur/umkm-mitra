@@ -118,3 +118,55 @@ export function getPhoneValidationError(phone: string): string | null {
   
   return null;
 }
+
+/**
+ * Validates a phone number and returns result object
+ * @param phone - The phone number to validate
+ * @returns Object with isValid and error message
+ */
+export function validatePhone(phone: string): { isValid: boolean; error: string | null } {
+  const error = getPhoneValidationError(phone);
+  return {
+    isValid: error === null && phone.trim() !== '',
+    error,
+  };
+}
+
+/**
+ * Checks if phone is in WhatsApp format (Indonesian 08xx format)
+ * @param phone - The phone number to check
+ * @returns boolean indicating if it's a valid WhatsApp format
+ */
+export function isWhatsAppFormat(phone: string): boolean {
+  const cleaned = phone.replace(/\D/g, '');
+  
+  // Convert +62 to 0
+  let normalized = cleaned;
+  if (cleaned.startsWith('62')) {
+    normalized = '0' + cleaned.substring(2);
+  }
+  
+  // Must be valid Indonesian number starting with 08
+  return normalized.startsWith('08') && normalized.length >= 10 && normalized.length <= 13;
+}
+
+/**
+ * Converts Indonesian phone to international WhatsApp format
+ * @param phone - The phone number to convert
+ * @returns Phone in 62xxx format for WhatsApp
+ */
+export function toWhatsAppFormat(phone: string): string {
+  const cleaned = phone.replace(/\D/g, '');
+  
+  // If already starts with 62, return as is
+  if (cleaned.startsWith('62')) {
+    return cleaned;
+  }
+  
+  // If starts with 0, replace with 62
+  if (cleaned.startsWith('0')) {
+    return '62' + cleaned.substring(1);
+  }
+  
+  return cleaned;
+}
