@@ -32,6 +32,26 @@ import UnauthorizedPage from "./pages/UnauthorizedPage";
 // Admin Pages
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
+import AdminMerchantsPage from "./pages/admin/AdminMerchantsPage";
+import AdminVillagesPage from "./pages/admin/AdminVillagesPage";
+import AdminCouriersPage from "./pages/admin/AdminCouriersPage";
+import AdminPromotionsPage from "./pages/admin/AdminPromotionsPage";
+import AdminCodesPage from "./pages/admin/AdminCodesPage";
+
+// Verifikator Pages
+import VerifikatorDashboardPage from "./pages/verifikator/VerifikatorDashboardPage";
+import VerifikatorCodesPage from "./pages/verifikator/VerifikatorCodesPage";
+import VerifikatorMerchantsPage from "./pages/verifikator/VerifikatorMerchantsPage";
+
+// Merchant Pages
+import MerchantDashboardPage from "./pages/merchant/MerchantDashboardPage";
+import MerchantProductsPage from "./pages/merchant/MerchantProductsPage";
+import MerchantOrdersPage from "./pages/merchant/MerchantOrdersPage";
+
+// Desa Pages
+import DesaDashboardPage from "./pages/desa/DesaDashboardPage";
+import DesaTourismPage from "./pages/desa/DesaTourismPage";
+import DesaMerchantsPage from "./pages/desa/DesaMerchantsPage";
 
 const queryClient = new QueryClient();
 
@@ -106,27 +126,78 @@ const App = () => (
               } />
               <Route path="/admin/merchants" element={
                 <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminDashboardPage />
+                  <AdminMerchantsPage />
                 </ProtectedRoute>
               } />
               <Route path="/admin/villages" element={
                 <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminDashboardPage />
+                  <AdminVillagesPage />
                 </ProtectedRoute>
               } />
               <Route path="/admin/couriers" element={
                 <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminDashboardPage />
+                  <AdminCouriersPage />
                 </ProtectedRoute>
               } />
               <Route path="/admin/promotions" element={
                 <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminDashboardPage />
+                  <AdminPromotionsPage />
                 </ProtectedRoute>
               } />
               <Route path="/admin/codes" element={
                 <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminDashboardPage />
+                  <AdminCodesPage />
+                </ProtectedRoute>
+              } />
+
+              {/* Verifikator routes */}
+              <Route path="/verifikator" element={
+                <ProtectedRoute allowedRoles={['verifikator', 'admin']}>
+                  <VerifikatorDashboardPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/verifikator/codes" element={
+                <ProtectedRoute allowedRoles={['verifikator', 'admin']}>
+                  <VerifikatorCodesPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/verifikator/merchants" element={
+                <ProtectedRoute allowedRoles={['verifikator', 'admin']}>
+                  <VerifikatorMerchantsPage />
+                </ProtectedRoute>
+              } />
+
+              {/* Merchant routes */}
+              <Route path="/merchant" element={
+                <ProtectedRoute allowedRoles={['merchant', 'admin']}>
+                  <MerchantDashboardPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/merchant/products" element={
+                <ProtectedRoute allowedRoles={['merchant', 'admin']}>
+                  <MerchantProductsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/merchant/orders" element={
+                <ProtectedRoute allowedRoles={['merchant', 'admin']}>
+                  <MerchantOrdersPage />
+                </ProtectedRoute>
+              } />
+
+              {/* Admin Desa routes */}
+              <Route path="/desa" element={
+                <ProtectedRoute allowedRoles={['admin_desa', 'admin']}>
+                  <DesaDashboardPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/desa/tourism" element={
+                <ProtectedRoute allowedRoles={['admin_desa', 'admin']}>
+                  <DesaTourismPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/desa/merchants" element={
+                <ProtectedRoute allowedRoles={['admin_desa', 'admin']}>
+                  <DesaMerchantsPage />
                 </ProtectedRoute>
               } />
 

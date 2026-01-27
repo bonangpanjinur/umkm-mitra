@@ -1,0 +1,112 @@
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { 
+  LayoutDashboard, 
+  Package, 
+  Receipt, 
+  Settings, 
+  ChevronLeft,
+  Store
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface SidebarItem {
+  label: string;
+  href: string;
+  icon: React.ReactNode;
+  badge?: number;
+}
+
+export function MerchantSidebar() {
+  const location = useLocation();
+  const { user } = useAuth();
+  const [pendingOrders, setPendingOrders] = useState(0);
+
+  useEffect(() => {
+    const fetchPending = async () => {
+      if (!user) return;
+      
+      // Get merchant for this user
+      const { data: merchant } = await supabase
+        .from('merchants')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (merchant) {
+        const { count } = await supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('merchant_id', merchant.id)
+          .eq('status', 'NEW');
+        
+        setPendingOrders(count || 0);
+      }
+    };
+    fetchPending();
+  }, [user]);
+
+  const menuItems: SidebarItem[] = [
+    { label: 'Dashboard', href: '/merchant', icon: <LayoutDashboard className="h-4 w-4" /> },
+    { label: 'Produk', href: '/merchant/products', icon: <Package className="h-4 w-4" /> },
+    { label: 'Pesanan', href: '/merchant/orders', icon: <Receipt className="h-4 w-4" />, badge: pendingOrders },
+    { label: 'Pengaturan', href: '/merchant/settings', icon: <Settings className="h-4 w-4" /> },
+  ];
+
+  return (
+    <div className="w-64 min-h-screen bg-card border-r border-border flex flex-col">
+      <div className="p-4 border-b border-border">
+        <div className="flex items-center gap-2">
+          <Store className="h-6 w-6 text-primary" />
+          <span className="font-semibold text-lg">Toko Saya</span>
+        </div>
+      </div>
+
+      <nav className="flex-1 p-3 space-y-1">
+        {menuItems.map((item) => {
+          const isActive = location.pathname === item.href;
+          
+          return (
+            <Link
+              key={item.href}
+              to={item.href}
+              className={cn(
+                "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                isActive 
+                  ? "bg-primary text-primary-foreground" 
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                {item.icon}
+                {item.label}
+              </div>
+              {item.badge !== undefined && item.badge > 0 && (
+                <span className={cn(
+                  "text-xs px-2 py-0.5 rounded-full",
+                  isActive 
+                    ? "bg-primary-foreground/20 text-primary-foreground" 
+                    : "bg-destructive text-destructive-foreground"
+                )}>
+                  {item.badge}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="p-3 border-t border-border">
+        <Link
+          to="/"
+          className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Kembali ke Aplikasi
+        </Link>
+      </div>
+    </div>
+  );
+}
