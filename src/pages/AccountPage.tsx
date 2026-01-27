@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Settings, HelpCircle, LogIn, LogOut, Store, ChevronRight, Edit, Loader2 } from 'lucide-react';
+import { User, Settings, HelpCircle, LogIn, LogOut, Store, ChevronRight, Edit } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { ProfileEditor } from '@/components/account/ProfileEditor';
 
 interface Profile {
   full_name: string;
@@ -23,12 +22,6 @@ export default function AccountPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({
-    full_name: '',
-    phone: '',
-    address: '',
-  });
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -52,11 +45,6 @@ export default function AccountPage() {
 
       if (data) {
         setProfile(data);
-        setFormData({
-          full_name: data.full_name || '',
-          phone: data.phone || '',
-          address: data.address || '',
-        });
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -65,38 +53,9 @@ export default function AccountPage() {
     }
   };
 
-  const handleSave = async () => {
-    if (!user) return;
-    setSaving(true);
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: formData.full_name,
-          phone: formData.phone || null,
-          address: formData.address || null,
-        })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      setProfile({
-        full_name: formData.full_name,
-        phone: formData.phone || null,
-        address: formData.address || null,
-      });
-      setEditing(false);
-      toast({ title: 'Profil berhasil diperbarui' });
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast({
-        title: 'Gagal memperbarui profil',
-        variant: 'destructive',
-      });
-    } finally {
-      setSaving(false);
-    }
+  const handleProfileSave = (data: { full_name: string; phone: string | null; address: string | null }) => {
+    setProfile(data);
+    setEditing(false);
   };
 
   const handleSignOut = async () => {
@@ -148,48 +107,16 @@ export default function AccountPage() {
                 </div>
 
                 {editing ? (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Nama Lengkap</Label>
-                      <Input
-                        value={formData.full_name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                        placeholder="Nama lengkap"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>No. Telepon</Label>
-                      <Input
-                        value={formData.phone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                        placeholder="08xxxxxxxxxx"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Alamat</Label>
-                      <Input
-                        value={formData.address}
-                        onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                        placeholder="Alamat lengkap"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => setEditing(false)}
-                        className="flex-1"
-                      >
-                        Batal
-                      </Button>
-                      <Button
-                        onClick={handleSave}
-                        className="flex-1"
-                        disabled={saving}
-                      >
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Simpan'}
-                      </Button>
-                    </div>
-                  </div>
+                  <ProfileEditor
+                    userId={user.id}
+                    initialData={{
+                      full_name: profile?.full_name || '',
+                      phone: profile?.phone || null,
+                      address: profile?.address || null,
+                    }}
+                    onSave={handleProfileSave}
+                    onCancel={() => setEditing(false)}
+                  />
                 ) : (
                   <div className="space-y-2 text-sm">
                     {profile?.phone && (
