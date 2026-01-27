@@ -1374,6 +1374,51 @@ export type Database = {
           },
         ]
       }
+      verifikator_withdrawals: {
+        Row: {
+          account_holder: string
+          account_number: string
+          admin_notes: string | null
+          amount: number
+          bank_name: string
+          created_at: string
+          id: string
+          processed_at: string | null
+          processed_by: string | null
+          status: string
+          updated_at: string
+          verifikator_id: string
+        }
+        Insert: {
+          account_holder: string
+          account_number: string
+          admin_notes?: string | null
+          amount: number
+          bank_name: string
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          updated_at?: string
+          verifikator_id: string
+        }
+        Update: {
+          account_holder?: string
+          account_number?: string
+          admin_notes?: string | null
+          amount?: number
+          bank_name?: string
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          updated_at?: string
+          verifikator_id?: string
+        }
+        Relationships: []
+      }
       villages: {
         Row: {
           approved_at: string | null
@@ -1527,6 +1572,14 @@ export type Database = {
       is_courier: { Args: never; Returns: boolean }
       is_merchant: { Args: never; Returns: boolean }
       is_verifikator: { Args: never; Returns: boolean }
+      process_verifikator_withdrawal: {
+        Args: {
+          p_admin_notes?: string
+          p_status: string
+          p_withdrawal_id: string
+        }
+        Returns: boolean
+      }
       send_notification: {
         Args: {
           p_link?: string

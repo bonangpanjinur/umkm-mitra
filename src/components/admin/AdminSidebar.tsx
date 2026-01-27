@@ -14,7 +14,8 @@ import {
   FileText,
   RotateCcw,
   ScrollText,
-  Package
+  Package,
+  Percent
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,9 +33,10 @@ interface AdminSidebarProps {
   pendingOrders?: number;
   pendingRefunds?: number;
   pendingWithdrawals?: number;
+  pendingVerifikatorWithdrawals?: number;
 }
 
-export function AdminSidebar({ pendingMerchants = 0, pendingVillages = 0, pendingCouriers = 0, pendingOrders = 0, pendingRefunds = 0, pendingWithdrawals = 0 }: AdminSidebarProps) {
+export function AdminSidebar({ pendingMerchants = 0, pendingVillages = 0, pendingCouriers = 0, pendingOrders = 0, pendingRefunds = 0, pendingWithdrawals = 0, pendingVerifikatorWithdrawals = 0 }: AdminSidebarProps) {
   const location = useLocation();
 
   const menuItems: SidebarItem[] = [
@@ -45,7 +47,8 @@ export function AdminSidebar({ pendingMerchants = 0, pendingVillages = 0, pendin
     { label: 'Desa Wisata', href: '/admin/villages', icon: <MapPin className="h-4 w-4" />, badge: pendingVillages },
     { label: 'Kurir', href: '/admin/couriers', icon: <Bike className="h-4 w-4" />, badge: pendingCouriers },
     { label: 'Paket Transaksi', href: '/admin/packages', icon: <Package className="h-4 w-4" /> },
-    { label: 'Penarikan', href: '/admin/withdrawals', icon: <RotateCcw className="h-4 w-4" />, badge: pendingWithdrawals },
+    { label: 'Komisi Verifikator', href: '/admin/verifikator-commissions', icon: <Percent className="h-4 w-4" />, badge: pendingVerifikatorWithdrawals },
+    { label: 'Penarikan Merchant', href: '/admin/withdrawals', icon: <RotateCcw className="h-4 w-4" />, badge: pendingWithdrawals },
     { label: 'Refund', href: '/admin/refunds', icon: <RotateCcw className="h-4 w-4" />, badge: pendingRefunds },
     { label: 'Laporan', href: '/admin/reports', icon: <FileText className="h-4 w-4" /> },
     { label: 'Promosi', href: '/admin/promotions', icon: <Megaphone className="h-4 w-4" /> },

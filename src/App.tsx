@@ -47,6 +47,7 @@ import AdminRefundsPage from "./pages/admin/AdminRefundsPage";
 import AdminLogsPage from "./pages/admin/AdminLogsPage";
 import AdminWithdrawalsPage from "./pages/admin/AdminWithdrawalsPage";
 import AdminPackagesPage from "./pages/admin/AdminPackagesPage";
+import AdminVerifikatorCommissionsPage from "./pages/admin/AdminVerifikatorCommissionsPage";
 
 // Verifikator Pages
 import VerifikatorDashboardPage from "./pages/verifikator/VerifikatorDashboardPage";
@@ -226,6 +227,11 @@ const App = () => (
               <Route path="/admin/packages" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminPackagesPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/verifikator-commissions" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminVerifikatorCommissionsPage />
                 </ProtectedRoute>
               } />
 

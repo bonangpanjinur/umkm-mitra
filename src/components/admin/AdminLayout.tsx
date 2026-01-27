@@ -16,6 +16,7 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
   const [pendingVillages, setPendingVillages] = useState(0);
   const [pendingCouriers, setPendingCouriers] = useState(0);
   const [pendingWithdrawals, setPendingWithdrawals] = useState(0);
+  const [pendingVerifikatorWithdrawals, setPendingVerifikatorWithdrawals] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -26,11 +27,21 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
         setPendingVillages(stats.pendingVillages);
         setPendingCouriers(stats.pendingCouriers);
         
-        // Fetch pending withdrawals count
-        const { count } = await import('@/integrations/supabase/client').then(m => 
-          m.supabase.from('withdrawal_requests').select('*', { count: 'exact', head: true }).eq('status', 'PENDING')
-        );
-        setPendingWithdrawals(count || 0);
+        const { supabase } = await import('@/integrations/supabase/client');
+        
+        // Fetch pending merchant withdrawals count
+        const { count: merchantWithdrawals } = await supabase
+          .from('withdrawal_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'PENDING');
+        setPendingWithdrawals(merchantWithdrawals || 0);
+        
+        // Fetch pending verifikator withdrawals count
+        const { count: verifikatorWithdrawals } = await supabase
+          .from('verifikator_withdrawals')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'PENDING');
+        setPendingVerifikatorWithdrawals(verifikatorWithdrawals || 0);
       } catch (error) {
         console.error('Error loading stats:', error);
       }
@@ -60,6 +71,7 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
           pendingVillages={pendingVillages}
           pendingCouriers={pendingCouriers}
           pendingWithdrawals={pendingWithdrawals}
+          pendingVerifikatorWithdrawals={pendingVerifikatorWithdrawals}
         />
       </div>
 
