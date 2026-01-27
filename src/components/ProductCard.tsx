@@ -62,10 +62,14 @@ export function ProductCard({ product, index = 0, showCategoryBadge = false }: P
         </div>
         
         <div className="p-2.5">
-          <div className="text-[9px] text-muted-foreground mb-0.5 truncate flex items-center gap-1">
+          <Link 
+            to={`/store/${product.merchantId}`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-[9px] text-muted-foreground mb-0.5 truncate flex items-center gap-1 hover:text-primary transition"
+          >
             {product.merchantName}
             <Star className="h-2 w-2 text-gold fill-gold" />
-          </div>
+          </Link>
           <h3 className="font-bold text-xs text-card-foreground line-clamp-2 min-h-[2.5em]">
             {product.name}
           </h3>
