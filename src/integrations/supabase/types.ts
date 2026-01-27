@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_logs: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          new_value: Json | null
+          old_value: Json | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           category: string
@@ -475,6 +514,9 @@ export type Database = {
           address: string | null
           address_detail: string | null
           avatar_url: string | null
+          block_reason: string | null
+          blocked_at: string | null
+          blocked_by: string | null
           city_id: string | null
           city_name: string | null
           created_at: string
@@ -482,6 +524,7 @@ export type Database = {
           district_name: string | null
           full_name: string
           id: string
+          is_blocked: boolean | null
           phone: string | null
           province_id: string | null
           province_name: string | null
@@ -495,6 +538,9 @@ export type Database = {
           address?: string | null
           address_detail?: string | null
           avatar_url?: string | null
+          block_reason?: string | null
+          blocked_at?: string | null
+          blocked_by?: string | null
           city_id?: string | null
           city_name?: string | null
           created_at?: string
@@ -502,6 +548,7 @@ export type Database = {
           district_name?: string | null
           full_name?: string
           id?: string
+          is_blocked?: boolean | null
           phone?: string | null
           province_id?: string | null
           province_name?: string | null
@@ -515,6 +562,9 @@ export type Database = {
           address?: string | null
           address_detail?: string | null
           avatar_url?: string | null
+          block_reason?: string | null
+          blocked_at?: string | null
+          blocked_by?: string | null
           city_id?: string | null
           city_name?: string | null
           created_at?: string
@@ -522,6 +572,7 @@ export type Database = {
           district_name?: string | null
           full_name?: string
           id?: string
+          is_blocked?: boolean | null
           phone?: string | null
           province_id?: string | null
           province_name?: string | null
@@ -604,6 +655,56 @@ export type Database = {
           view_count?: number | null
         }
         Relationships: []
+      }
+      refund_requests: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          buyer_id: string
+          created_at: string
+          id: string
+          order_id: string
+          processed_at: string | null
+          processed_by: string | null
+          reason: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          buyer_id: string
+          created_at?: string
+          id?: string
+          order_id: string
+          processed_at?: string | null
+          processed_by?: string | null
+          reason: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          buyer_id?: string
+          created_at?: string
+          id?: string
+          order_id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          reason?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refund_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tourism: {
         Row: {

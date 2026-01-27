@@ -38,6 +38,10 @@ import AdminCouriersPage from "./pages/admin/AdminCouriersPage";
 import AdminPromotionsPage from "./pages/admin/AdminPromotionsPage";
 import AdminCodesPage from "./pages/admin/AdminCodesPage";
 import AdminOrdersPage from "./pages/admin/AdminOrdersPage";
+import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import AdminReportsPage from "./pages/admin/AdminReportsPage";
+import AdminRefundsPage from "./pages/admin/AdminRefundsPage";
+import AdminLogsPage from "./pages/admin/AdminLogsPage";
 
 // Verifikator Pages
 import VerifikatorDashboardPage from "./pages/verifikator/VerifikatorDashboardPage";
@@ -154,6 +158,26 @@ const App = () => (
               <Route path="/admin/orders" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminOrdersPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/users" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminUsersPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/reports" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminReportsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/refunds" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminRefundsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/logs" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminLogsPage />
                 </ProtectedRoute>
               } />
 

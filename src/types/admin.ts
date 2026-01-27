@@ -96,6 +96,9 @@ export interface AdminStats {
   totalProducts: number;
   totalOrders: number;
   totalPromotions: number;
+  pendingRefunds: number;
+  totalUsers: number;
+  blockedUsers: number;
 }
 
 export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';

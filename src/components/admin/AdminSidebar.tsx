@@ -9,7 +9,11 @@ import {
   TicketCheck,
   ChevronLeft,
   ShieldCheck,
-  Receipt
+  Receipt,
+  Users,
+  FileText,
+  RotateCcw,
+  ScrollText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,19 +29,24 @@ interface AdminSidebarProps {
   pendingVillages?: number;
   pendingCouriers?: number;
   pendingOrders?: number;
+  pendingRefunds?: number;
 }
 
-export function AdminSidebar({ pendingMerchants = 0, pendingVillages = 0, pendingCouriers = 0, pendingOrders = 0 }: AdminSidebarProps) {
+export function AdminSidebar({ pendingMerchants = 0, pendingVillages = 0, pendingCouriers = 0, pendingOrders = 0, pendingRefunds = 0 }: AdminSidebarProps) {
   const location = useLocation();
 
   const menuItems: SidebarItem[] = [
     { label: 'Dashboard', href: '/admin', icon: <LayoutDashboard className="h-4 w-4" /> },
     { label: 'Pesanan', href: '/admin/orders', icon: <Receipt className="h-4 w-4" />, badge: pendingOrders },
+    { label: 'Pengguna', href: '/admin/users', icon: <Users className="h-4 w-4" /> },
     { label: 'Merchant', href: '/admin/merchants', icon: <Store className="h-4 w-4" />, badge: pendingMerchants },
     { label: 'Desa Wisata', href: '/admin/villages', icon: <MapPin className="h-4 w-4" />, badge: pendingVillages },
     { label: 'Kurir', href: '/admin/couriers', icon: <Bike className="h-4 w-4" />, badge: pendingCouriers },
+    { label: 'Refund', href: '/admin/refunds', icon: <RotateCcw className="h-4 w-4" />, badge: pendingRefunds },
+    { label: 'Laporan', href: '/admin/reports', icon: <FileText className="h-4 w-4" /> },
     { label: 'Promosi', href: '/admin/promotions', icon: <Megaphone className="h-4 w-4" /> },
     { label: 'Kode Verifikator', href: '/admin/codes', icon: <TicketCheck className="h-4 w-4" /> },
+    { label: 'System Logs', href: '/admin/logs', icon: <ScrollText className="h-4 w-4" /> },
     { label: 'Pengaturan', href: '/admin/settings', icon: <Settings className="h-4 w-4" /> },
   ];
 

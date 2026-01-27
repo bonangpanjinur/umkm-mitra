@@ -4,18 +4,22 @@ import type { Village, Merchant } from '@/types';
 
 // Fetch admin stats
 export async function fetchAdminStats(): Promise<AdminStats> {
-  const [merchants, villages, couriers, products, orders, promotions] = await Promise.all([
+  const [merchants, villages, couriers, products, orders, promotions, refunds, profiles] = await Promise.all([
     supabase.from('merchants').select('id, registration_status', { count: 'exact' }),
     supabase.from('villages').select('id, registration_status', { count: 'exact' }),
     supabase.from('couriers').select('id, registration_status', { count: 'exact' }),
     supabase.from('products').select('id', { count: 'exact' }),
     supabase.from('orders').select('id', { count: 'exact' }),
     supabase.from('promotions').select('id', { count: 'exact' }),
+    supabase.from('refund_requests').select('id, status', { count: 'exact' }),
+    supabase.from('profiles').select('id, is_blocked', { count: 'exact' }),
   ]);
 
   const pendingMerchants = merchants.data?.filter(m => m.registration_status === 'PENDING').length || 0;
   const pendingVillages = villages.data?.filter(v => v.registration_status === 'PENDING').length || 0;
   const pendingCouriers = couriers.data?.filter(c => c.registration_status === 'PENDING').length || 0;
+  const pendingRefunds = refunds.data?.filter(r => r.status === 'PENDING').length || 0;
+  const blockedUsers = profiles.data?.filter(p => p.is_blocked).length || 0;
 
   return {
     totalMerchants: merchants.count || 0,
@@ -27,6 +31,9 @@ export async function fetchAdminStats(): Promise<AdminStats> {
     totalProducts: products.count || 0,
     totalOrders: orders.count || 0,
     totalPromotions: promotions.count || 0,
+    pendingRefunds,
+    totalUsers: profiles.count || 0,
+    blockedUsers,
   };
 }
 
