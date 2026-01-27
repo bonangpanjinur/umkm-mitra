@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, 
@@ -7,10 +7,12 @@ import {
   Minus, 
   Plus,
   ShoppingCart,
-  Star
+  Star,
+  Store,
+  MapPin,
+  BadgeCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { MerchantInfo } from '@/components/MerchantInfo';
 import { fetchProduct, fetchMerchant } from '@/lib/api';
 import { useCart } from '@/contexts/CartContext';
 import { formatPrice } from '@/lib/utils';
@@ -128,11 +130,46 @@ export default function ProductDetail() {
             </div>
           </div>
           
-          {/* Merchant Info */}
+          {/* Merchant Info - Clickable to Store */}
           {merchant && (
-            <div className="mb-6">
-              <MerchantInfo merchant={merchant} />
-            </div>
+            <Link 
+              to={`/store/${merchant.id}`}
+              className="block mb-6 p-3 bg-secondary rounded-xl border border-border hover:border-primary/30 transition group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
+                  {merchant.image ? (
+                    <img src={merchant.image} alt={merchant.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Store className="h-5 w-5 text-primary" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-bold text-sm text-foreground truncate group-hover:text-primary transition">
+                      {merchant.name}
+                    </p>
+                    {merchant.badge === 'VERIFIED' && (
+                      <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0" />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                    <span className="flex items-center gap-0.5">
+                      <MapPin className="h-2.5 w-2.5" />
+                      {merchant.villageName}
+                    </span>
+                    <span>•</span>
+                    <span className="flex items-center gap-0.5">
+                      <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
+                      {merchant.ratingAvg}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground group-hover:text-primary transition">
+                  Lihat Toko →
+                </div>
+              </div>
+            </Link>
           )}
 
           <h3 className="font-bold text-sm text-foreground mb-2">Deskripsi</h3>

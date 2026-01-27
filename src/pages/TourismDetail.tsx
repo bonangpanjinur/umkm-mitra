@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, 
@@ -10,16 +10,19 @@ import {
   Check,
   MessageCircle,
   Instagram,
-  Eye
+  Eye,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { fetchTourismById } from '@/lib/api';
+import { supabase } from '@/integrations/supabase/client';
 import type { Tourism } from '@/types';
 
 export default function TourismDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [tourism, setTourism] = useState<Tourism | null>(null);
+  const [villageId, setVillageId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,6 +31,17 @@ export default function TourismDetail() {
       try {
         const data = await fetchTourismById(id);
         setTourism(data);
+        
+        // Get village_id from tourism table
+        const { data: tourismData } = await supabase
+          .from('tourism')
+          .select('village_id')
+          .eq('id', id)
+          .single();
+        
+        if (tourismData) {
+          setVillageId(tourismData.village_id);
+        }
       } catch (error) {
         console.error('Error loading tourism:', error);
       } finally {
@@ -100,12 +114,25 @@ export default function TourismDetail() {
               <h2 className="text-2xl font-bold text-foreground leading-tight">
                 {tourism.name}
               </h2>
-              <div className="flex items-center gap-1.5 mt-2">
-                <MapPin className="h-3.5 w-3.5 text-primary" />
-                <span className="text-sm text-muted-foreground">
-                  {tourism.villageName}
-                </span>
-              </div>
+              {villageId ? (
+                <Link 
+                  to={`/village/${villageId}`}
+                  className="flex items-center gap-1.5 mt-2 group"
+                >
+                  <MapPin className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-sm text-muted-foreground group-hover:text-primary transition">
+                    {tourism.villageName}
+                  </span>
+                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition" />
+                </Link>
+              ) : (
+                <div className="flex items-center gap-1.5 mt-2">
+                  <MapPin className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-sm text-muted-foreground">
+                    {tourism.villageName}
+                  </span>
+                </div>
+              )}
             </div>
             
             {tourism.viewCount && (

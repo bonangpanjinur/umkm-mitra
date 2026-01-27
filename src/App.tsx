@@ -29,6 +29,8 @@ import CourierDashboardPage from "./pages/CourierDashboardPage";
 import CourierEarningsPage from "./pages/courier/CourierEarningsPage";
 import OrderTrackingPage from "./pages/OrderTrackingPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
+import VillageDetailPage from "./pages/VillageDetailPage";
+import MerchantProfilePage from "./pages/MerchantProfilePage";
 
 // Admin Pages
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
@@ -88,6 +90,8 @@ const App = () => (
               <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/tourism" element={<TourismPage />} />
               <Route path="/tourism/:id" element={<TourismDetail />} />
+              <Route path="/village/:id" element={<VillageDetailPage />} />
+              <Route path="/store/:id" element={<MerchantProfilePage />} />
               <Route path="/explore" element={<ExplorePage />} />
               <Route path="/search" element={<SearchResultsPage />} />
               <Route path="/auth" element={<AuthPage />} />
