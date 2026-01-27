@@ -18,7 +18,8 @@ import {
   Percent,
   DollarSign,
   Image,
-  Bell
+  Bell,
+  Smartphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -60,6 +61,7 @@ export function AdminSidebar({ pendingMerchants = 0, pendingVillages = 0, pendin
     { label: 'Broadcast', href: '/admin/broadcast', icon: <Bell className="h-4 w-4" /> },
     { label: 'Kode Verifikator', href: '/admin/codes', icon: <TicketCheck className="h-4 w-4" /> },
     { label: 'System Logs', href: '/admin/logs', icon: <ScrollText className="h-4 w-4" /> },
+    { label: 'PWA Settings', href: '/admin/pwa', icon: <Smartphone className="h-4 w-4" /> },
     { label: 'Pengaturan', href: '/admin/settings', icon: <Settings className="h-4 w-4" /> },
   ];
 

@@ -6,6 +6,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { InstallBanner } from "@/components/pwa/InstallBanner";
+import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
+import { UpdatePrompt } from "@/components/pwa/UpdatePrompt";
 
 // Pages
 import Index from "./pages/Index";
@@ -33,6 +36,7 @@ import UnauthorizedPage from "./pages/UnauthorizedPage";
 import VillageDetailPage from "./pages/VillageDetailPage";
 import MerchantProfilePage from "./pages/MerchantProfilePage";
 import ShopsPage from "./pages/ShopsPage";
+import InstallPage from "./pages/InstallPage";
 
 // Admin Pages
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
@@ -53,6 +57,7 @@ import AdminVerifikatorCommissionsPage from "./pages/admin/AdminVerifikatorCommi
 import AdminFinancePage from "./pages/admin/AdminFinancePage";
 import AdminBannersPage from "./pages/admin/AdminBannersPage";
 import AdminBroadcastPage from "./pages/admin/AdminBroadcastPage";
+import AdminPWASettingsPage from "./pages/admin/AdminPWASettingsPage";
 import CourierHistoryPage from "./pages/courier/CourierHistoryPage";
 // Verifikator Pages
 import VerifikatorDashboardPage from "./pages/verifikator/VerifikatorDashboardPage";
@@ -92,7 +97,10 @@ const App = () => (
         <CartProvider>
           <Toaster />
           <Sonner />
+          <OfflineIndicator />
           <BrowserRouter>
+            <InstallBanner />
+            <UpdatePrompt />
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<Index />} />
@@ -111,6 +119,7 @@ const App = () => (
               <Route path="/register/village" element={<RegisterVillagePage />} />
               <Route path="/register/merchant" element={<RegisterMerchantPage />} />
               <Route path="/register/courier" element={<RegisterCourierPage />} />
+              <Route path="/install" element={<InstallPage />} />
               <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
               {/* Protected buyer routes */}
@@ -261,6 +270,11 @@ const App = () => (
               <Route path="/admin/broadcast" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminBroadcastPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/pwa" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminPWASettingsPage />
                 </ProtectedRoute>
               } />
 
