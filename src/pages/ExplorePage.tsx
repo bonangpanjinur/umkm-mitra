@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Camera, ShoppingBag } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { FloatingCartButton } from '@/components/layout/FloatingCartButton';
-import { SearchBar } from '@/components/ui/SearchBar';
+import { SearchBarAdvanced } from '@/components/explore/SearchBarAdvanced';
 import { VillageCardLarge } from '@/components/explore/VillageCardLarge';
 import { TourismCardCompact } from '@/components/explore/TourismCardCompact';
 import { ProductCardHorizontal } from '@/components/explore/ProductCardHorizontal';
@@ -14,11 +14,18 @@ import { CategoryTabs, ExploreCategory } from '@/components/explore/CategoryTabs
 import { FilterSheet, FilterButton, FilterOptions } from '@/components/explore/FilterSheet';
 import { SortDropdown, SortOption } from '@/components/explore/SortDropdown';
 import { EmptyState } from '@/components/explore/EmptyState';
+import { useSearchHistory } from '@/hooks/useSearchHistory';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { fetchVillages, fetchTourism, fetchProducts } from '@/lib/api';
 import type { Village, Tourism, Product } from '@/types';
 
+const ITEMS_PER_PAGE = 10;
+const POPULAR_SEARCHES = ['Kopi Arabika', 'Batik Tulis', 'Wisata Alam', 'Keripik Singkong', 'Anyaman Bambu'];
+
 export default function ExplorePage() {
   const navigate = useNavigate();
+  const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
+  
   const [villages, setVillages] = useState<Village[]>([]);
   const [tourismSpots, setTourismSpots] = useState<Tourism[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -32,6 +39,11 @@ export default function ExplorePage() {
     districts: [],
     minRating: null,
   });
+  
+  // Pagination state
+  const [displayedProducts, setDisplayedProducts] = useState(ITEMS_PER_PAGE);
+  const [displayedTourism, setDisplayedTourism] = useState(ITEMS_PER_PAGE);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -52,6 +64,12 @@ export default function ExplorePage() {
     }
     loadData();
   }, []);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setDisplayedProducts(ITEMS_PER_PAGE);
+    setDisplayedTourism(ITEMS_PER_PAGE);
+  }, [searchQuery, activeCategory, filters, sortOption]);
 
   // Get available districts for filter
   const availableDistricts = useMemo(() => {
@@ -124,11 +142,51 @@ export default function ExplorePage() {
     (filters.districts.length > 0 ? 1 : 0) + 
     (filters.minRating ? 1 : 0);
 
-  const handleSearchSubmit = () => {
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+  const handleSearchSubmit = (query: string) => {
+    if (query.trim()) {
+      addToHistory(query);
+      // Optionally navigate to dedicated search page
+      // navigate(`/search?q=${encodeURIComponent(query.trim())}`);
     }
   };
+
+  // Infinite scroll handlers
+  const hasMoreProducts = displayedProducts < filteredData.products.length;
+  const hasMoreTourism = displayedTourism < filteredData.tourism.length;
+
+  const loadMoreProducts = useCallback(() => {
+    if (isLoadingMore) return;
+    setIsLoadingMore(true);
+    setTimeout(() => {
+      setDisplayedProducts(prev => Math.min(prev + ITEMS_PER_PAGE, filteredData.products.length));
+      setIsLoadingMore(false);
+    }, 300);
+  }, [isLoadingMore, filteredData.products.length]);
+
+  const loadMoreTourism = useCallback(() => {
+    if (isLoadingMore) return;
+    setIsLoadingMore(true);
+    setTimeout(() => {
+      setDisplayedTourism(prev => Math.min(prev + ITEMS_PER_PAGE, filteredData.tourism.length));
+      setIsLoadingMore(false);
+    }, 300);
+  }, [isLoadingMore, filteredData.tourism.length]);
+
+  const { lastElementRef: lastProductRef } = useInfiniteScroll({
+    hasMore: hasMoreProducts,
+    isLoading: isLoadingMore,
+    onLoadMore: loadMoreProducts,
+  });
+
+  const { lastElementRef: lastTourismRef } = useInfiniteScroll({
+    hasMore: hasMoreTourism,
+    isLoading: isLoadingMore,
+    onLoadMore: loadMoreTourism,
+  });
+
+  // Paginated data
+  const paginatedProducts = filteredData.products.slice(0, displayedProducts);
+  const paginatedTourism = filteredData.tourism.slice(0, displayedTourism);
 
   return (
     <div className="mobile-shell bg-background flex flex-col min-h-screen">
@@ -137,27 +195,28 @@ export default function ExplorePage() {
       <div className="flex-1 overflow-y-auto pb-24">
         {/* Search & Filter Section */}
         <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/30">
-          <div className="px-4 pt-3 pb-2">
-            <SearchBar 
+          {/* Search + Filter + Sort in one row */}
+          <div className="px-4 pt-3 pb-2 flex items-center gap-2">
+            <SearchBarAdvanced 
               placeholder="Cari desa, wisata, atau produk..." 
               value={searchQuery}
               onChange={setSearchQuery}
               onSubmit={handleSearchSubmit}
+              history={history}
+              onHistoryRemove={removeFromHistory}
+              onHistoryClear={clearHistory}
+              popularSearches={POPULAR_SEARCHES}
             />
+            <FilterButton onClick={() => setIsFilterOpen(true)} activeCount={activeFilterCount} />
+            <SortDropdown value={sortOption} onChange={setSortOption} />
           </div>
           
-          {/* Category Tabs + Filter Controls */}
-          <div className="px-4 pb-2 flex items-center justify-between gap-2">
-            <div className="flex-1 overflow-hidden">
-              <CategoryTabs 
-                activeCategory={activeCategory} 
-                onCategoryChange={setActiveCategory} 
-              />
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <FilterButton onClick={() => setIsFilterOpen(true)} activeCount={activeFilterCount} />
-              <SortDropdown value={sortOption} onChange={setSortOption} />
-            </div>
+          {/* Category Tabs - Below */}
+          <div className="px-4 pb-2">
+            <CategoryTabs 
+              activeCategory={activeCategory} 
+              onCategoryChange={setActiveCategory} 
+            />
           </div>
         </div>
         
@@ -202,7 +261,7 @@ export default function ExplorePage() {
                 </motion.section>
               )}
               
-              {/* Tourism Section */}
+              {/* Tourism Section with Infinite Scroll */}
               {showTourism && filteredData.tourism.length > 0 && (
                 <motion.section
                   initial={{ opacity: 0, y: 20 }}
@@ -216,14 +275,24 @@ export default function ExplorePage() {
                     icon={<Camera className="h-4 w-4" />}
                   />
                   <div className="space-y-3">
-                    {filteredData.tourism.slice(0, activeCategory === 'tourism' ? undefined : 3).map((tourism, idx) => (
-                      <TourismCardCompact key={tourism.id} tourism={tourism} index={idx} />
+                    {paginatedTourism.map((tourism, idx) => (
+                      <div
+                        key={tourism.id}
+                        ref={idx === paginatedTourism.length - 1 && activeCategory === 'tourism' ? lastTourismRef : null}
+                      >
+                        <TourismCardCompact tourism={tourism} index={idx} />
+                      </div>
                     ))}
+                    {hasMoreTourism && activeCategory === 'tourism' && (
+                      <div className="flex justify-center py-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
+                      </div>
+                    )}
                   </div>
                 </motion.section>
               )}
               
-              {/* Products Section */}
+              {/* Products Section with Infinite Scroll */}
               {showProducts && filteredData.products.length > 0 && (
                 <motion.section
                   initial={{ opacity: 0, y: 20 }}
@@ -237,9 +306,19 @@ export default function ExplorePage() {
                     icon={<ShoppingBag className="h-4 w-4" />}
                   />
                   <div className="space-y-3">
-                    {filteredData.products.slice(0, activeCategory === 'products' ? undefined : 4).map((product, idx) => (
-                      <ProductCardHorizontal key={product.id} product={product} index={idx} />
+                    {paginatedProducts.map((product, idx) => (
+                      <div
+                        key={product.id}
+                        ref={idx === paginatedProducts.length - 1 && activeCategory === 'products' ? lastProductRef : null}
+                      >
+                        <ProductCardHorizontal product={product} index={idx} />
+                      </div>
                     ))}
+                    {hasMoreProducts && activeCategory === 'products' && (
+                      <div className="flex justify-center py-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
+                      </div>
+                    )}
                   </div>
                 </motion.section>
               )}
