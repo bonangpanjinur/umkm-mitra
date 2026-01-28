@@ -1,22 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
-import { Icon, LatLng } from 'leaflet';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { MapPin, Navigation, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { calculateDistance } from '@/lib/codSecurity';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { LatLng } from 'leaflet';
 
-// Fix for default marker icon
-import 'leaflet/dist/leaflet.css';
-
-const customIcon = new Icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
+// Lazy load the map component to avoid SSR issues with react-leaflet
+const LazyMapComponent = lazy(() => import('./LazyMap'));
 
 interface LocationPickerProps {
   value: { lat: number; lng: number } | null;
@@ -26,23 +16,15 @@ interface LocationPickerProps {
   disabled?: boolean;
 }
 
-// Component to handle map click events
-function MapClickHandler({ onClick }: { onClick: (latlng: LatLng) => void }) {
-  useMapEvents({
-    click: (e) => {
-      onClick(e.latlng);
-    },
-  });
-  return null;
-}
-
-// Component to recenter map
-function MapRecenter({ center }: { center: [number, number] }) {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(center, map.getZoom());
-  }, [center, map]);
-  return null;
+function MapLoadingFallback() {
+  return (
+    <div className="h-full w-full flex items-center justify-center bg-muted">
+      <div className="text-center space-y-2">
+        <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+        <p className="text-xs text-muted-foreground">Memuat peta...</p>
+      </div>
+    </div>
+  );
 }
 
 export function LocationPicker({
@@ -54,6 +36,7 @@ export function LocationPicker({
 }: LocationPickerProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mapError, setMapError] = useState(false);
   
   // Default to Indonesia center
   const defaultCenter: [number, number] = [-2.5489, 118.0149];
@@ -139,22 +122,30 @@ export function LocationPicker({
       )}
 
       <div className="rounded-lg overflow-hidden border border-border h-[200px]">
-        <MapContainer
-          center={center}
-          zoom={value ? 15 : 5}
-          className="h-full w-full"
-          scrollWheelZoom={true}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <MapClickHandler onClick={handleMapClick} />
-          {value && <MapRecenter center={[value.lat, value.lng]} />}
-          {value && (
-            <Marker position={[value.lat, value.lng]} icon={customIcon} />
-          )}
-        </MapContainer>
+        {mapError ? (
+          <div className="h-full w-full flex items-center justify-center bg-muted">
+            <div className="text-center space-y-2">
+              <MapPin className="h-6 w-6 mx-auto text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">Gagal memuat peta</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setMapError(false)}
+              >
+                Coba Lagi
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Suspense fallback={<MapLoadingFallback />}>
+            <LazyMapComponent
+              center={center}
+              value={value}
+              zoom={value ? 15 : 5}
+              onMapClick={handleMapClick}
+            />
+          </Suspense>
+        )}
       </div>
 
       <p className="text-xs text-muted-foreground">
