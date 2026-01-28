@@ -19,6 +19,8 @@ import { Badge } from '@/components/ui/badge';
 import { ProductCard } from '@/components/ProductCard';
 import { supabase } from '@/integrations/supabase/client';
 import { VerifiedBadge } from '@/components/merchant/VerifiedBadge';
+import { MerchantClosedBanner, MerchantStatusBadge } from '@/components/merchant/MerchantClosedBanner';
+import { getMerchantOperatingStatus, formatTime } from '@/lib/merchantOperatingHours';
 import type { Product } from '@/types';
 
 interface MerchantData {
@@ -256,7 +258,7 @@ export default function MerchantProfilePage() {
                   {/* Rating */}
                   <div className="flex items-center gap-2 mb-2">
                     <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <Star className="h-4 w-4 fill-gold text-gold" />
                       <span className="font-semibold text-foreground">
                         {merchant.rating_avg?.toFixed(1) || '0.0'}
                       </span>
@@ -275,22 +277,38 @@ export default function MerchantProfilePage() {
                   </div>
                 </div>
 
-                {/* Open Status */}
-                <div className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                  merchant.is_open 
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                }`}>
-                  {merchant.is_open ? 'Buka' : 'Tutup'}
-                </div>
+                {/* Open Status - uses operating hours logic */}
+                <MerchantStatusBadge
+                  isManuallyOpen={merchant.is_open}
+                  openTime={merchant.open_time}
+                  closeTime={merchant.close_time}
+                  size="md"
+                />
               </div>
+
+              {/* Closed Banner */}
+              {(() => {
+                const status = getMerchantOperatingStatus(merchant.is_open, merchant.open_time, merchant.close_time);
+                if (!status.isCurrentlyOpen) {
+                  return (
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <MerchantClosedBanner
+                        isManuallyOpen={merchant.is_open}
+                        openTime={merchant.open_time}
+                        closeTime={merchant.close_time}
+                      />
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               {/* Quick Info */}
               <div className="flex gap-4 mt-4 pt-4 border-t border-border">
                 {merchant.open_time && merchant.close_time && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock className="h-4 w-4" />
-                    <span>{merchant.open_time} - {merchant.close_time}</span>
+                    <span>{formatTime(merchant.open_time)} - {formatTime(merchant.close_time)}</span>
                   </div>
                 )}
                 {merchant.classification_price && (
@@ -385,7 +403,7 @@ export default function MerchantProfilePage() {
                           {[...Array(5)].map((_, i) => (
                             <Star 
                               key={i} 
-                              className={`h-3 w-3 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted'}`} 
+                              className={`h-3 w-3 ${i < review.rating ? 'fill-gold text-gold' : 'text-muted'}`} 
                             />
                           ))}
                         </div>

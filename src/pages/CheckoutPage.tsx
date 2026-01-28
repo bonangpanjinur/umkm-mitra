@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, MapPin, Truck, Package, Loader2, CheckCircle, CreditCard, Wallet, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, MapPin, Truck, Package, Loader2, CheckCircle, CreditCard, Wallet, AlertTriangle, ShieldCheck, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,8 +19,17 @@ import { fetchCODSettings, quickCODCheck, getBuyerCODStatus } from '@/lib/codSec
 import { validatePhone, isWhatsAppFormat } from '@/lib/phoneValidation';
 import { useMerchantQuota, useMerchantQuotaForOrder, notifyMerchantLowQuota } from '@/hooks/useMerchantQuota';
 import { QuotaBlockedAlert } from '@/components/checkout/QuotaBlockedAlert';
+import { getMerchantOperatingStatus, formatTime } from '@/lib/merchantOperatingHours';
 
 type PaymentMethod = 'COD' | 'ONLINE';
+
+interface MerchantOperatingInfo {
+  id: string;
+  name: string;
+  isOpen: boolean;
+  openTime: string | null;
+  closeTime: string | null;
+}
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
@@ -145,6 +154,54 @@ export default function CheckoutPage() {
     quotaStatuses 
   } = useMerchantQuota(merchantIds);
 
+  // Check merchant operating hours
+  const [merchantOperatingInfo, setMerchantOperatingInfo] = useState<Record<string, MerchantOperatingInfo>>({});
+  const [operatingHoursLoading, setOperatingHoursLoading] = useState(false);
+
+  useEffect(() => {
+    const loadMerchantOperatingHours = async () => {
+      if (merchantIds.length === 0) return;
+      
+      setOperatingHoursLoading(true);
+      try {
+        const { data } = await supabase
+          .from('merchants')
+          .select('id, name, is_open, open_time, close_time')
+          .in('id', merchantIds);
+
+        if (data) {
+          const info: Record<string, MerchantOperatingInfo> = {};
+          data.forEach(m => {
+            info[m.id] = {
+              id: m.id,
+              name: m.name,
+              isOpen: m.is_open,
+              openTime: m.open_time,
+              closeTime: m.close_time,
+            };
+          });
+          setMerchantOperatingInfo(info);
+        }
+      } catch (error) {
+        console.error('Error loading merchant operating hours:', error);
+      } finally {
+        setOperatingHoursLoading(false);
+      }
+    };
+
+    loadMerchantOperatingHours();
+  }, [merchantIds.join(',')]);
+
+  // Get closed merchants
+  const closedMerchants = useMemo(() => {
+    return Object.values(merchantOperatingInfo).filter(m => {
+      const status = getMerchantOperatingStatus(m.isOpen, m.openTime, m.closeTime);
+      return !status.isCurrentlyOpen;
+    });
+  }, [merchantOperatingInfo]);
+
+  const allMerchantsOpen = closedMerchants.length === 0;
+
   // Remove items from a specific merchant
   const handleRemoveMerchantItems = (merchantId: string) => {
     const merchantItems = itemsByMerchant[merchantId]?.items || [];
@@ -210,6 +267,17 @@ export default function CheckoutPage() {
       toast({
         title: 'Tidak dapat melanjutkan',
         description: 'Beberapa toko tidak memiliki kuota transaksi aktif',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check if any merchant is closed
+    if (!allMerchantsOpen) {
+      const closedNames = closedMerchants.map(m => m.name).join(', ');
+      toast({
+        title: 'Toko sedang tutup',
+        description: `${closedNames} sedang tidak menerima pesanan`,
         variant: 'destructive',
       });
       return;
@@ -413,8 +481,50 @@ export default function CheckoutPage() {
           />
         )}
 
+        {/* Closed Merchants Alert */}
+        {!operatingHoursLoading && closedMerchants.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 mb-4"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center flex-shrink-0">
+                <Clock className="h-5 w-5 text-destructive" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-destructive text-sm mb-1">
+                  Beberapa toko sedang tutup
+                </h4>
+                <div className="space-y-2">
+                  {closedMerchants.map(m => {
+                    const status = getMerchantOperatingStatus(m.isOpen, m.openTime, m.closeTime);
+                    return (
+                      <div key={m.id} className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{m.name}</p>
+                          <p className="text-xs text-muted-foreground">{status.reason}</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRemoveMerchantItems(m.id)}
+                          className="text-xs"
+                        >
+                          Hapus
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Loading quota check */}
-        {quotaLoading && (
+        {(quotaLoading || operatingHoursLoading) && (
           <div className="bg-muted/50 rounded-lg p-4 mb-4 flex items-center justify-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
             <span className="text-sm text-muted-foreground">Memeriksa ketersediaan toko...</span>
@@ -645,17 +755,22 @@ export default function CheckoutPage() {
           onClick={handleSubmit}
           className="w-full shadow-brand font-bold"
           size="lg"
-          disabled={loading || items.length === 0 || !canProceedCheckout || quotaLoading}
+          disabled={loading || items.length === 0 || !canProceedCheckout || quotaLoading || operatingHoursLoading || !allMerchantsOpen}
         >
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               Memproses...
             </>
-          ) : quotaLoading ? (
+          ) : quotaLoading || operatingHoursLoading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Memeriksa Kuota...
+              Memeriksa Toko...
+            </>
+          ) : !allMerchantsOpen ? (
+            <>
+              <Clock className="h-4 w-4 mr-2" />
+              Ada Toko Tutup
             </>
           ) : !canProceedCheckout ? (
             'Tidak Dapat Melanjutkan'

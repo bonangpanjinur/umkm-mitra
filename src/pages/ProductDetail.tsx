@@ -9,15 +9,35 @@ import {
   Star,
   Store,
   MapPin,
-  BadgeCheck
+  BadgeCheck,
+  Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { fetchProduct, fetchMerchant } from '@/lib/api';
+import { fetchProduct } from '@/lib/api';
 import { useCart } from '@/contexts/CartContext';
 import { formatPrice } from '@/lib/utils';
 import { WishlistButton } from '@/components/WishlistButton';
 import { ShareProduct } from '@/components/product/ShareProduct';
-import type { Product, Merchant } from '@/types';
+import { MerchantClosedBanner, MerchantStatusBadge } from '@/components/merchant/MerchantClosedBanner';
+import { getMerchantOperatingStatus, formatTime } from '@/lib/merchantOperatingHours';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import type { Product } from '@/types';
+
+interface MerchantInfo {
+  id: string;
+  name: string;
+  phone: string | null;
+  address: string | null;
+  ratingAvg: number;
+  ratingCount: number;
+  badge: string | null;
+  isOpen: boolean;
+  openTime: string | null;
+  closeTime: string | null;
+  villageName: string | null;
+  isVerified: boolean;
+}
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -25,7 +45,7 @@ export default function ProductDetail() {
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<Product | null>(null);
-  const [merchant, setMerchant] = useState<Merchant | null>(null);
+  const [merchant, setMerchant] = useState<MerchantInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,8 +56,42 @@ export default function ProductDetail() {
         setProduct(productData);
         
         if (productData) {
-          const merchantData = await fetchMerchant(productData.merchantId);
-          setMerchant(merchantData);
+          // Fetch merchant with operating hours
+          const { data: merchantData } = await supabase
+            .from('merchants')
+            .select(`
+              id,
+              name,
+              phone,
+              address,
+              rating_avg,
+              rating_count,
+              badge,
+              is_open,
+              open_time,
+              close_time,
+              is_verified,
+              villages (name)
+            `)
+            .eq('id', productData.merchantId)
+            .maybeSingle();
+          
+          if (merchantData) {
+            setMerchant({
+              id: merchantData.id,
+              name: merchantData.name,
+              phone: merchantData.phone,
+              address: merchantData.address,
+              ratingAvg: Number(merchantData.rating_avg) || 0,
+              ratingCount: merchantData.rating_count || 0,
+              badge: merchantData.badge,
+              isOpen: merchantData.is_open,
+              openTime: merchantData.open_time,
+              closeTime: merchantData.close_time,
+              villageName: merchantData.villages?.name || null,
+              isVerified: merchantData.is_verified || false,
+            });
+          }
         }
       } catch (error) {
         console.error('Error loading product:', error);
@@ -47,6 +101,11 @@ export default function ProductDetail() {
     }
     loadData();
   }, [id]);
+
+  // Get merchant operating status
+  const merchantStatus = merchant 
+    ? getMerchantOperatingStatus(merchant.isOpen, merchant.openTime, merchant.closeTime)
+    : null;
   
   if (loading) {
     return (
@@ -68,9 +127,21 @@ export default function ProductDetail() {
   }
 
   const handleAddToCart = () => {
+    // Check if merchant is open
+    if (merchantStatus && !merchantStatus.isCurrentlyOpen) {
+      toast({
+        title: 'Toko sedang tutup',
+        description: merchantStatus.reason,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     addToCart(product, quantity);
     navigate('/cart');
   };
+
+  const canOrder = merchantStatus?.isCurrentlyOpen !== false;
 
   return (
     <div className="mobile-shell bg-card flex flex-col min-h-screen relative">
@@ -137,6 +208,18 @@ export default function ProductDetail() {
               <span className="text-xs font-medium text-foreground">4.8</span>
             </div>
           </div>
+
+          {/* Merchant Closed Banner */}
+          {merchant && !merchantStatus?.isCurrentlyOpen && (
+            <div className="mb-4">
+              <MerchantClosedBanner
+                isManuallyOpen={merchant.isOpen}
+                openTime={merchant.openTime}
+                closeTime={merchant.closeTime}
+                merchantName={merchant.name}
+              />
+            </div>
+          )}
           
           {/* Merchant Info - Clickable to Store */}
           {merchant && (
@@ -146,30 +229,40 @@ export default function ProductDetail() {
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
-                  {merchant.image ? (
-                    <img src={merchant.image} alt={merchant.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <Store className="h-5 w-5 text-primary" />
-                  )}
+                  <Store className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <p className="font-bold text-sm text-foreground truncate group-hover:text-primary transition">
                       {merchant.name}
                     </p>
-                    {merchant.badge === 'VERIFIED' && (
+                    {(merchant.badge === 'VERIFIED' || merchant.isVerified) && (
                       <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0" />
                     )}
+                    <MerchantStatusBadge
+                      isManuallyOpen={merchant.isOpen}
+                      openTime={merchant.openTime}
+                      closeTime={merchant.closeTime}
+                    />
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                    {merchant.villageName && (
+                      <>
+                        <span className="flex items-center gap-0.5">
+                          <MapPin className="h-2.5 w-2.5" />
+                          {merchant.villageName}
+                        </span>
+                        <span>•</span>
+                      </>
+                    )}
                     <span className="flex items-center gap-0.5">
-                      <MapPin className="h-2.5 w-2.5" />
-                      {merchant.villageName}
+                      <Star className="h-2.5 w-2.5 fill-gold text-gold" />
+                      {merchant.ratingAvg.toFixed(1)}
                     </span>
                     <span>•</span>
                     <span className="flex items-center gap-0.5">
-                      <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
-                      {merchant.ratingAvg}
+                      <Clock className="h-2.5 w-2.5" />
+                      {formatTime(merchant.openTime || '08:00')} - {formatTime(merchant.closeTime || '17:00')}
                     </span>
                   </div>
                 </div>
@@ -195,6 +288,7 @@ export default function ProductDetail() {
             <button 
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
               className="w-8 h-full text-muted-foreground hover:text-primary transition"
+              disabled={!canOrder}
             >
               <Minus className="h-4 w-4 mx-auto" />
             </button>
@@ -204,6 +298,7 @@ export default function ProductDetail() {
             <button 
               onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
               className="w-8 h-full text-muted-foreground hover:text-primary transition"
+              disabled={!canOrder}
             >
               <Plus className="h-4 w-4 mx-auto" />
             </button>
@@ -221,9 +316,19 @@ export default function ProductDetail() {
           onClick={handleAddToCart}
           className="w-full shadow-brand"
           size="lg"
+          disabled={!canOrder}
         >
-          <ShoppingCart className="h-4 w-4 mr-2" />
-          Tambah ke Keranjang
+          {canOrder ? (
+            <>
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Tambah ke Keranjang
+            </>
+          ) : (
+            <>
+              <Clock className="h-4 w-4 mr-2" />
+              Toko Sedang Tutup
+            </>
+          )}
         </Button>
       </div>
     </div>
