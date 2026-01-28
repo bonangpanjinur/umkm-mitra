@@ -83,13 +83,13 @@ export default function AdminCouriersPage() {
 
   const getStatusBadge = (regStatus: string, status: string, isAvailable: boolean) => {
     if (regStatus === 'PENDING') {
-      return <Badge variant="secondary" className="bg-amber-100 text-amber-700">Menunggu</Badge>;
+      return <Badge variant="secondary" className="bg-warning/10 text-warning">Menunggu</Badge>;
     }
     if (regStatus === 'REJECTED') {
       return <Badge variant="destructive">Ditolak</Badge>;
     }
     if (status === 'ACTIVE' && isAvailable) {
-      return <Badge className="bg-green-100 text-green-700">Online</Badge>;
+      return <Badge className="bg-success/10 text-success">Online</Badge>;
     }
     if (status === 'ACTIVE') {
       return <Badge variant="outline">Offline</Badge>;
@@ -146,7 +146,7 @@ export default function AdminCouriersPage() {
         const date = new Date(item.last_location_update);
         const now = new Date();
         const diffMinutes = Math.floor((now.getTime() - date.getTime()) / 60000);
-        if (diffMinutes < 5) return <span className="text-green-600">Baru saja</span>;
+        if (diffMinutes < 5) return <span className="text-success">Baru saja</span>;
         if (diffMinutes < 60) return `${diffMinutes} menit lalu`;
         return date.toLocaleDateString('id-ID');
       },

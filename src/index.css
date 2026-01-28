@@ -63,6 +63,14 @@
     --warning: 45 93% 47%;
     --warning-foreground: 30 30% 15%;
     
+    --info: 210 90% 55%;
+    --info-foreground: 0 0% 100%;
+    
+    /* Status colors for online/offline indicators */
+    --status-online: 160 84% 39%;
+    --status-offline: 0 84% 60%;
+    --status-pending: 45 93% 47%;
+    
     /* Borders & inputs */
     --border: 214 20% 90%;
     --input: 214 20% 90%;
@@ -111,6 +119,19 @@
     
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
+    
+    --success: 160 70% 45%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 45 80% 55%;
+    --warning-foreground: 220 20% 10%;
+    
+    --info: 210 80% 55%;
+    --info-foreground: 0 0% 100%;
+    
+    --status-online: 160 70% 45%;
+    --status-offline: 0 70% 50%;
+    --status-pending: 45 80% 55%;
     
     --border: 220 15% 20%;
     --input: 220 15% 20%;

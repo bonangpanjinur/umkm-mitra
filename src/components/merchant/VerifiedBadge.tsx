@@ -28,25 +28,25 @@ const badgeConfig: Record<BadgeType, {
     icon: BadgeCheck,
     label: 'Terverifikasi',
     description: 'Toko ini telah diverifikasi oleh tim kami',
-    bgClass: 'bg-blue-100 dark:bg-blue-900/30',
-    textClass: 'text-blue-700 dark:text-blue-400',
-    iconClass: 'text-blue-500',
+    bgClass: 'bg-info/10 dark:bg-info/20',
+    textClass: 'text-info',
+    iconClass: 'text-info',
   },
   popular: {
     icon: Award,
     label: 'Populer',
     description: 'Toko dengan penjualan dan rating tinggi',
-    bgClass: 'bg-amber-100 dark:bg-amber-900/30',
-    textClass: 'text-amber-700 dark:text-amber-400',
-    iconClass: 'text-amber-500',
+    bgClass: 'bg-warning/10 dark:bg-warning/20',
+    textClass: 'text-warning',
+    iconClass: 'text-warning',
   },
   new: {
     icon: Shield,
     label: 'Baru',
     description: 'Toko baru bergabung',
-    bgClass: 'bg-green-100 dark:bg-green-900/30',
-    textClass: 'text-green-700 dark:text-green-400',
-    iconClass: 'text-green-500',
+    bgClass: 'bg-success/10 dark:bg-success/20',
+    textClass: 'text-success',
+    iconClass: 'text-success',
   },
 };
 
@@ -128,7 +128,7 @@ export function VerifiedIcon({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <BadgeCheck className={cn(sizes.iconSize, 'text-blue-500', className)} />
+        <BadgeCheck className={cn(sizes.iconSize, 'text-info', className)} />
       </TooltipTrigger>
       <TooltipContent>
         <p className="font-medium">Toko Terverifikasi</p>

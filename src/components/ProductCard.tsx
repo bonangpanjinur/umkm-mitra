@@ -16,10 +16,10 @@ interface ProductCardProps {
 }
 
 const categoryLabels: Record<string, { label: string; className: string }> = {
-  kuliner: { label: 'Kuliner', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  fashion: { label: 'Fashion', className: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' },
-  kriya: { label: 'Kriya', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  wisata: { label: 'Wisata', className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  kuliner: { label: 'Kuliner', className: 'bg-warning/10 text-warning dark:bg-warning/20' },
+  fashion: { label: 'Fashion', className: 'bg-primary/10 text-primary dark:bg-primary/20' },
+  kriya: { label: 'Kriya', className: 'bg-info/10 text-info dark:bg-info/20' },
+  wisata: { label: 'Wisata', className: 'bg-success/10 text-success dark:bg-success/20' },
 };
 
 export function ProductCard({ product, index = 0, showCategoryBadge = false }: ProductCardProps) {
@@ -88,7 +88,7 @@ export function ProductCard({ product, index = 0, showCategoryBadge = false }: P
             className="text-[9px] text-muted-foreground mb-0.5 truncate flex items-center gap-1 hover:text-primary transition"
           >
             {product.merchantName}
-            <Star className="h-2 w-2 text-amber-500 fill-amber-500" />
+            <Star className="h-2 w-2 text-gold fill-gold" />
           </Link>
           <h3 className="font-bold text-xs text-card-foreground line-clamp-2 min-h-[2.5em]">
             {product.name}

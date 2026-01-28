@@ -95,15 +95,15 @@ export function QuickStats({ merchantId }: QuickStatsProps) {
       label: 'Sedang Diproses', 
       value: stats.processingOrders, 
       icon: TrendingUp,
-      color: 'text-blue-500',
-      bgColor: 'bg-blue-500/10'
+      color: 'text-info',
+      bgColor: 'bg-info/10'
     },
     { 
       label: 'Selesai Hari Ini', 
       value: stats.completedToday, 
       icon: CheckCircle,
-      color: 'text-green-500',
-      bgColor: 'bg-green-500/10'
+      color: 'text-success',
+      bgColor: 'bg-success/10'
     },
     { 
       label: 'Batal Hari Ini', 
@@ -116,8 +116,8 @@ export function QuickStats({ merchantId }: QuickStatsProps) {
       label: 'Pendapatan Hari Ini', 
       value: formatPrice(stats.todayRevenue), 
       icon: Wallet,
-      color: 'text-green-600',
-      bgColor: 'bg-green-600/10',
+      color: 'text-success',
+      bgColor: 'bg-success/10',
       isPrice: true
     },
   ];

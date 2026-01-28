@@ -85,7 +85,7 @@ export default function AccountPage() {
         label: 'Dashboard Admin',
         path: '/admin',
         icon: <Shield className="h-5 w-5" />,
-        color: 'bg-red-500/10 text-red-600 border-red-200',
+        color: 'bg-destructive/10 text-destructive border-destructive/20',
       });
     }
 
@@ -94,7 +94,7 @@ export default function AccountPage() {
         label: 'Dashboard Desa',
         path: '/desa',
         icon: <Building2 className="h-5 w-5" />,
-        color: 'bg-green-500/10 text-green-600 border-green-200',
+        color: 'bg-success/10 text-success border-success/20',
       });
     }
 
@@ -103,7 +103,7 @@ export default function AccountPage() {
         label: 'Dashboard Verifikator',
         path: '/verifikator',
         icon: <CheckCircle className="h-5 w-5" />,
-        color: 'bg-blue-500/10 text-blue-600 border-blue-200',
+        color: 'bg-info/10 text-info border-info/20',
       });
     }
 
@@ -112,7 +112,7 @@ export default function AccountPage() {
         label: 'Dashboard Merchant',
         path: '/merchant',
         icon: <Store className="h-5 w-5" />,
-        color: 'bg-orange-500/10 text-orange-600 border-orange-200',
+        color: 'bg-warning/10 text-warning border-warning/20',
       });
     }
 
@@ -121,7 +121,7 @@ export default function AccountPage() {
         label: 'Dashboard Kurir',
         path: '/courier',
         icon: <Bike className="h-5 w-5" />,
-        color: 'bg-purple-500/10 text-purple-600 border-purple-200',
+        color: 'bg-primary/10 text-primary border-primary/20',
       });
     }
 

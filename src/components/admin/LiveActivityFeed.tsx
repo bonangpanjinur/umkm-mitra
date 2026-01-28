@@ -19,32 +19,32 @@ interface LiveActivityFeedProps {
 const eventConfig = {
   order: {
     icon: ShoppingBag,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-500/10',
+    color: 'text-info',
+    bgColor: 'bg-info/10',
     label: 'Pesanan',
   },
   merchant: {
     icon: Store,
-    color: 'text-amber-500',
-    bgColor: 'bg-amber-500/10',
+    color: 'text-warning',
+    bgColor: 'bg-warning/10',
     label: 'Merchant',
   },
   courier: {
     icon: Bike,
-    color: 'text-green-500',
-    bgColor: 'bg-green-500/10',
+    color: 'text-success',
+    bgColor: 'bg-success/10',
     label: 'Kurir',
   },
   village: {
     icon: MapPin,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-500/10',
+    color: 'text-primary',
+    bgColor: 'bg-primary/10',
     label: 'Desa',
   },
   product: {
     icon: Package,
-    color: 'text-rose-500',
-    bgColor: 'bg-rose-500/10',
+    color: 'text-destructive',
+    bgColor: 'bg-destructive/10',
     label: 'Produk',
   },
 };
@@ -58,7 +58,7 @@ const actionConfig = {
   UPDATE: {
     icon: RefreshCw,
     label: 'Diperbarui',
-    color: 'text-amber-500',
+    color: 'text-warning',
   },
   DELETE: {
     icon: Trash2,

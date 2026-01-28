@@ -79,13 +79,13 @@ export default function AdminVillagesPage() {
 
   const getStatusBadge = (regStatus: string, isActive: boolean) => {
     if (regStatus === 'PENDING') {
-      return <Badge variant="secondary" className="bg-amber-100 text-amber-700">Menunggu</Badge>;
+      return <Badge variant="secondary" className="bg-warning/10 text-warning">Menunggu</Badge>;
     }
     if (regStatus === 'REJECTED') {
       return <Badge variant="destructive">Ditolak</Badge>;
     }
     if (isActive) {
-      return <Badge className="bg-green-100 text-green-700">Aktif</Badge>;
+      return <Badge className="bg-success/10 text-success">Aktif</Badge>;
     }
     return <Badge variant="outline">Nonaktif</Badge>;
   };

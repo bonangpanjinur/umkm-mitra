@@ -195,7 +195,7 @@ export function CourierMap({ courierId, showAllCouriers = false, height = '400px
             <Popup>
               <div className="text-sm">
                 <p className="font-bold">{courier.name}</p>
-                <p className={courier.isAvailable ? 'text-green-600' : 'text-red-600'}>
+                <p className={courier.isAvailable ? 'text-success' : 'text-destructive'}>
                   {courier.isAvailable ? '🟢 Tersedia' : '🔴 Tidak tersedia'}
                 </p>
                 <p className="text-muted-foreground text-xs">

@@ -69,21 +69,21 @@ export function LiveStatsGrid({ stats, loading, className }: LiveStatsGridProps)
         <StatItem
           label="Pesanan Hari Ini"
           value={stats.todayOrders}
-          icon={<ShoppingBag className="h-5 w-5 text-blue-500" />}
-          iconBg="bg-blue-500/10"
+          icon={<ShoppingBag className="h-5 w-5 text-info" />}
+          iconBg="bg-info/10"
         />
         <StatItem
           label="Pendapatan Hari Ini"
           value={formatPrice(stats.todayRevenue)}
-          icon={<DollarSign className="h-5 w-5 text-green-500" />}
-          iconBg="bg-green-500/10"
+          icon={<DollarSign className="h-5 w-5 text-success" />}
+          iconBg="bg-success/10"
         />
         <StatItem
           label="Menunggu Diproses"
           value={stats.newOrders}
           subValue="pesanan baru"
-          icon={<Clock className="h-5 w-5 text-amber-500" />}
-          iconBg="bg-amber-500/10"
+          icon={<Clock className="h-5 w-5 text-warning" />}
+          iconBg="bg-warning/10"
         />
         <StatItem
           label="Selesai Hari Ini"
@@ -99,36 +99,36 @@ export function LiveStatsGrid({ stats, loading, className }: LiveStatsGridProps)
           label="Merchant"
           value={stats.totalMerchants}
           subValue={`${stats.activeMerchants} aktif • ${stats.pendingMerchants} pending`}
-          icon={<Store className="h-5 w-5 text-amber-500" />}
-          iconBg="bg-amber-500/10"
+          icon={<Store className="h-5 w-5 text-warning" />}
+          iconBg="bg-warning/10"
         />
         <StatItem
           label="Kurir"
           value={stats.totalCouriers}
           subValue={`${stats.availableCouriers} online • ${stats.pendingCouriers} pending`}
-          icon={<Bike className="h-5 w-5 text-green-500" />}
-          iconBg="bg-green-500/10"
+          icon={<Bike className="h-5 w-5 text-success" />}
+          iconBg="bg-success/10"
         />
         <StatItem
           label="Desa Wisata"
           value={stats.totalVillages}
           subValue={`${stats.activeVillages} aktif • ${stats.pendingVillages} pending`}
-          icon={<MapPin className="h-5 w-5 text-purple-500" />}
-          iconBg="bg-purple-500/10"
+          icon={<MapPin className="h-5 w-5 text-primary" />}
+          iconBg="bg-primary/10"
         />
         <StatItem
           label="Produk"
           value={stats.totalProducts}
           subValue={`${stats.activeProducts} aktif`}
-          icon={<Package className="h-5 w-5 text-rose-500" />}
-          iconBg="bg-rose-500/10"
+          icon={<Package className="h-5 w-5 text-destructive" />}
+          iconBg="bg-destructive/10"
         />
         <StatItem
           label="Total Pesanan"
           value={stats.totalOrders}
           subValue={`${stats.processingOrders} dalam proses`}
-          icon={<ShoppingBag className="h-5 w-5 text-blue-500" />}
-          iconBg="bg-blue-500/10"
+          icon={<ShoppingBag className="h-5 w-5 text-info" />}
+          iconBg="bg-info/10"
         />
       </div>
     </div>
