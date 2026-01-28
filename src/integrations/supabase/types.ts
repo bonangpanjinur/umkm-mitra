@@ -86,6 +86,45 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_logs: {
+        Row: {
+          backup_type: string
+          completed_at: string | null
+          created_by: string | null
+          error_message: string | null
+          file_size: number | null
+          file_url: string | null
+          id: string
+          started_at: string | null
+          status: string
+          tables_included: string[] | null
+        }
+        Insert: {
+          backup_type?: string
+          completed_at?: string | null
+          created_by?: string | null
+          error_message?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          tables_included?: string[] | null
+        }
+        Update: {
+          backup_type?: string
+          completed_at?: string | null
+          created_by?: string | null
+          error_message?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          tables_included?: string[] | null
+        }
+        Relationships: []
+      }
       broadcast_notifications: {
         Row: {
           created_at: string
@@ -1279,6 +1318,33 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          action: string
+          count: number | null
+          created_at: string | null
+          id: string
+          identifier: string
+          window_start: string | null
+        }
+        Insert: {
+          action: string
+          count?: number | null
+          created_at?: string | null
+          id?: string
+          identifier: string
+          window_start?: string | null
+        }
+        Update: {
+          action?: string
+          count?: number | null
+          created_at?: string | null
+          id?: string
+          identifier?: string
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       refund_requests: {
         Row: {
           admin_notes: string | null
@@ -1472,6 +1538,54 @@ export type Database = {
           user_id?: string
           village_id?: string | null
           village_name?: string | null
+        }
+        Relationships: []
+      }
+      seo_settings: {
+        Row: {
+          canonical_url: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          keywords: string | null
+          og_description: string | null
+          og_image: string | null
+          og_title: string | null
+          page_path: string
+          robots: string | null
+          title: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          canonical_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          keywords?: string | null
+          og_description?: string | null
+          og_image?: string | null
+          og_title?: string | null
+          page_path: string
+          robots?: string | null
+          title?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          canonical_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          keywords?: string | null
+          og_description?: string | null
+          og_image?: string | null
+          og_title?: string | null
+          page_path?: string
+          robots?: string | null
+          title?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -1847,6 +1961,123 @@ export type Database = {
         }
         Relationships: []
       }
+      voucher_usages: {
+        Row: {
+          discount_amount: number
+          id: string
+          order_id: string | null
+          used_at: string | null
+          user_id: string
+          voucher_id: string
+        }
+        Insert: {
+          discount_amount?: number
+          id?: string
+          order_id?: string | null
+          used_at?: string | null
+          user_id: string
+          voucher_id: string
+        }
+        Update: {
+          discount_amount?: number
+          id?: string
+          order_id?: string | null
+          used_at?: string | null
+          user_id?: string
+          voucher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voucher_usages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_usages_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vouchers: {
+        Row: {
+          code: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          end_date: string | null
+          id: string
+          is_active: boolean | null
+          max_discount: number | null
+          merchant_id: string | null
+          min_order_amount: number | null
+          name: string
+          start_date: string
+          updated_at: string | null
+          usage_limit: number | null
+          used_count: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_discount?: number | null
+          merchant_id?: string | null
+          min_order_amount?: number | null
+          name: string
+          start_date?: string
+          updated_at?: string | null
+          usage_limit?: number | null
+          used_count?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_discount?: number | null
+          merchant_id?: string | null
+          min_order_amount?: number | null
+          name?: string
+          start_date?: string
+          updated_at?: string | null
+          usage_limit?: number | null
+          used_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vouchers_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "public_merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wishlists: {
         Row: {
           created_at: string
@@ -2041,6 +2272,15 @@ export type Database = {
       }
     }
     Functions: {
+      apply_voucher: {
+        Args: {
+          p_code: string
+          p_merchant_id?: string
+          p_order_total: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
       auto_cancel_pending_orders: { Args: never; Returns: undefined }
       check_cod_eligibility: {
         Args: {
@@ -2052,6 +2292,15 @@ export type Database = {
         Returns: Json
       }
       check_merchant_quota: { Args: { p_merchant_id: string }; Returns: Json }
+      check_rate_limit: {
+        Args: {
+          p_action: string
+          p_identifier: string
+          p_max_requests?: number
+          p_window_seconds?: number
+        }
+        Returns: Json
+      }
       generate_monthly_kas: {
         Args: { p_group_id: string; p_month: number; p_year: number }
         Returns: number

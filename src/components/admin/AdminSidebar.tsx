@@ -20,7 +20,10 @@ import {
   Image,
   Bell,
   Smartphone,
-  Palette
+  Palette,
+  Shield,
+  Database,
+  Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -48,6 +51,7 @@ export function AdminSidebar({ pendingMerchants = 0, pendingVillages = 0, pendin
     { label: 'Dashboard', href: '/admin', icon: <LayoutDashboard className="h-4 w-4" /> },
     { label: 'Pesanan', href: '/admin/orders', icon: <Receipt className="h-4 w-4" />, badge: pendingOrders },
     { label: 'Pengguna', href: '/admin/users', icon: <Users className="h-4 w-4" /> },
+    { label: 'Role & Permission', href: '/admin/roles', icon: <Shield className="h-4 w-4" /> },
     { label: 'Merchant', href: '/admin/merchants', icon: <Store className="h-4 w-4" />, badge: pendingMerchants },
     { label: 'Desa Wisata', href: '/admin/villages', icon: <MapPin className="h-4 w-4" />, badge: pendingVillages },
     { label: 'Kurir', href: '/admin/couriers', icon: <Bike className="h-4 w-4" />, badge: pendingCouriers },
@@ -61,6 +65,8 @@ export function AdminSidebar({ pendingMerchants = 0, pendingVillages = 0, pendin
     { label: 'Promosi', href: '/admin/promotions', icon: <Megaphone className="h-4 w-4" /> },
     { label: 'Broadcast', href: '/admin/broadcast', icon: <Bell className="h-4 w-4" /> },
     { label: 'Kode Verifikator', href: '/admin/codes', icon: <TicketCheck className="h-4 w-4" /> },
+    { label: 'Backup Data', href: '/admin/backup', icon: <Database className="h-4 w-4" /> },
+    { label: 'SEO Settings', href: '/admin/seo', icon: <Globe className="h-4 w-4" /> },
     { label: 'System Logs', href: '/admin/logs', icon: <ScrollText className="h-4 w-4" /> },
     { label: 'PWA Settings', href: '/admin/pwa', icon: <Smartphone className="h-4 w-4" /> },
     { label: 'Whitelabel', href: '/admin/whitelabel', icon: <Palette className="h-4 w-4" /> },

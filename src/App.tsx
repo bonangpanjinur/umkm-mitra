@@ -64,6 +64,9 @@ import AdminBannersPage from "./pages/admin/AdminBannersPage";
 import AdminBroadcastPage from "./pages/admin/AdminBroadcastPage";
 import AdminPWASettingsPage from "./pages/admin/AdminPWASettingsPage";
 import AdminWhitelabelPage from "./pages/admin/AdminWhitelabelPage";
+import AdminRolesPage from "./pages/admin/AdminRolesPage";
+import AdminBackupPage from "./pages/admin/AdminBackupPage";
+import AdminSEOPage from "./pages/admin/AdminSEOPage";
 import CourierHistoryPage from "./pages/courier/CourierHistoryPage";
 // Verifikator Pages
 import VerifikatorDashboardPage from "./pages/verifikator/VerifikatorDashboardPage";
@@ -82,6 +85,9 @@ import MerchantPromoPage from "./pages/merchant/MerchantPromoPage";
 import MerchantWithdrawalPage from "./pages/merchant/MerchantWithdrawalPage";
 import MerchantSubscriptionPage from "./pages/merchant/MerchantSubscriptionPage";
 import MerchantFlashSalePage from "./pages/merchant/MerchantFlashSalePage";
+import MerchantVouchersPage from "./pages/merchant/MerchantVouchersPage";
+import MerchantScheduledPromoPage from "./pages/merchant/MerchantScheduledPromoPage";
+import MerchantVisitorStatsPage from "./pages/merchant/MerchantVisitorStatsPage";
 
 // Desa Pages
 import DesaDashboardPage from "./pages/desa/DesaDashboardPage";
@@ -301,6 +307,21 @@ const App = () => (
                   <AdminWhitelabelPage />
                 </ProtectedRoute>
               } />
+              <Route path="/admin/roles" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminRolesPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/backup" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminBackupPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/seo" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminSEOPage />
+                </ProtectedRoute>
+              } />
 
               {/* Verifikator routes */}
               <Route path="/verifikator" element={
@@ -373,6 +394,21 @@ const App = () => (
               <Route path="/merchant/flash-sale" element={
                 <ProtectedRoute allowedRoles={['merchant', 'admin']}>
                   <MerchantFlashSalePage />
+                </ProtectedRoute>
+              } />
+              <Route path="/merchant/vouchers" element={
+                <ProtectedRoute allowedRoles={['merchant', 'admin']}>
+                  <MerchantVouchersPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/merchant/scheduled-promo" element={
+                <ProtectedRoute allowedRoles={['merchant', 'admin']}>
+                  <MerchantScheduledPromoPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/merchant/visitor-stats" element={
+                <ProtectedRoute allowedRoles={['merchant', 'admin']}>
+                  <MerchantVisitorStatsPage />
                 </ProtectedRoute>
               } />
 

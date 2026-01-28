@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, 
-  Share2, 
   Minus, 
   Plus,
   ShoppingCart,
@@ -17,6 +16,7 @@ import { fetchProduct, fetchMerchant } from '@/lib/api';
 import { useCart } from '@/contexts/CartContext';
 import { formatPrice } from '@/lib/utils';
 import { WishlistButton } from '@/components/WishlistButton';
+import { ShareProduct } from '@/components/product/ShareProduct';
 import type { Product, Merchant } from '@/types';
 
 export default function ProductDetail() {
@@ -94,9 +94,13 @@ export default function ProductDetail() {
             </button>
             <div className="flex items-center gap-2">
               <WishlistButton productId={id || ''} size="md" />
-              <button className="w-10 h-10 bg-foreground/20 backdrop-blur rounded-full flex items-center justify-center text-primary-foreground hover:bg-foreground/40 transition border border-primary-foreground/20">
-                <Share2 className="h-5 w-5" />
-              </button>
+              <div className="w-10 h-10 bg-foreground/20 backdrop-blur rounded-full flex items-center justify-center text-primary-foreground hover:bg-foreground/40 transition border border-primary-foreground/20">
+                <ShareProduct 
+                  productId={id || ''} 
+                  productName={product?.name || ''} 
+                  productImage={product?.image}
+                />
+              </div>
             </div>
           </div>
           
