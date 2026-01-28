@@ -1,7 +1,6 @@
 // Wilayah.id API for Indonesian regions
 // Source: https://wilayah.id/
-
-const BASE_URL = 'https://wilayah.id/api';
+// Uses multiple fallback strategies: Edge Function -> CORS Proxy -> Static Data
 
 export interface Region {
   code: string;
@@ -10,7 +9,7 @@ export interface Region {
 
 interface WilayahResponse {
   data: Region[];
-  meta: {
+  meta?: {
     administrative_area_level: number;
     updated_at: string;
   };
@@ -18,7 +17,7 @@ interface WilayahResponse {
 
 // In-memory cache for API responses
 const cache: Map<string, { data: Region[]; timestamp: number }> = new Map();
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
 
 function getCacheKey(type: string, code?: string): string {
   return code ? `${type}-${code}` : type;
@@ -36,33 +35,172 @@ function setCache(key: string, data: Region[]): void {
   cache.set(key, { data, timestamp: Date.now() });
 }
 
-async function fetchWithRetry(url: string, retries = 2): Promise<Response> {
-  let lastError: Error | null = null;
-  
-  for (let i = 0; i <= retries; i++) {
-    try {
-      const response = await fetch(url, {
-        headers: {
-          'Accept': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        return response;
-      }
-      
-      lastError = new Error(`HTTP ${response.status}: ${response.statusText}`);
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error('Network error');
-      
-      // Wait before retrying (exponential backoff)
-      if (i < retries) {
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 500));
-      }
+// Static fallback data for provinces (in case all APIs fail)
+const STATIC_PROVINCES: Region[] = [
+  { code: "11", name: "Aceh" },
+  { code: "12", name: "Sumatera Utara" },
+  { code: "13", name: "Sumatera Barat" },
+  { code: "14", name: "Riau" },
+  { code: "15", name: "Jambi" },
+  { code: "16", name: "Sumatera Selatan" },
+  { code: "17", name: "Bengkulu" },
+  { code: "18", name: "Lampung" },
+  { code: "19", name: "Kepulauan Bangka Belitung" },
+  { code: "21", name: "Kepulauan Riau" },
+  { code: "31", name: "DKI Jakarta" },
+  { code: "32", name: "Jawa Barat" },
+  { code: "33", name: "Jawa Tengah" },
+  { code: "34", name: "DI Yogyakarta" },
+  { code: "35", name: "Jawa Timur" },
+  { code: "36", name: "Banten" },
+  { code: "51", name: "Bali" },
+  { code: "52", name: "Nusa Tenggara Barat" },
+  { code: "53", name: "Nusa Tenggara Timur" },
+  { code: "61", name: "Kalimantan Barat" },
+  { code: "62", name: "Kalimantan Tengah" },
+  { code: "63", name: "Kalimantan Selatan" },
+  { code: "64", name: "Kalimantan Timur" },
+  { code: "65", name: "Kalimantan Utara" },
+  { code: "71", name: "Sulawesi Utara" },
+  { code: "72", name: "Sulawesi Tengah" },
+  { code: "73", name: "Sulawesi Selatan" },
+  { code: "74", name: "Sulawesi Tenggara" },
+  { code: "75", name: "Gorontalo" },
+  { code: "76", name: "Sulawesi Barat" },
+  { code: "81", name: "Maluku" },
+  { code: "82", name: "Maluku Utara" },
+  { code: "91", name: "Papua" },
+  { code: "92", name: "Papua Barat" },
+  { code: "93", name: "Papua Selatan" },
+  { code: "94", name: "Papua Tengah" },
+  { code: "95", name: "Papua Pegunungan" },
+  { code: "96", name: "Papua Barat Daya" },
+];
+
+const BASE_URL = 'https://wilayah.id/api';
+
+// Try fetching directly first (some browsers/networks allow it)
+async function fetchDirect(url: string): Promise<Response | null> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const response = await fetch(url, {
+      headers: { 'Accept': 'application/json' },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (response.ok) {
+      return response;
     }
+  } catch {
+    // Silent fail, try next method
+  }
+  return null;
+}
+
+// Try using Edge Function proxy
+async function fetchViaEdgeFunction(type: string, code?: string): Promise<Response | null> {
+  try {
+    const projectUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    
+    if (!projectUrl || !anonKey) return null;
+    
+    const params = new URLSearchParams({ type });
+    if (code) params.append('code', code);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    
+    const response = await fetch(`${projectUrl}/functions/v1/wilayah-proxy?${params.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${anonKey}`,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (response.ok) {
+      return response;
+    }
+  } catch {
+    // Silent fail
+  }
+  return null;
+}
+
+// Try using public CORS proxy (allorigins.win)
+async function fetchViaCorsProxy(url: string): Promise<Response | null> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    const response = await fetch(proxyUrl, {
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (response.ok) {
+      return response;
+    }
+  } catch {
+    // Silent fail
+  }
+  return null;
+}
+
+// Main fetch function with multiple fallbacks
+async function fetchWithFallbacks(type: string, code?: string): Promise<Region[]> {
+  let url: string;
+  
+  switch (type) {
+    case 'provinces':
+      url = `${BASE_URL}/provinces.json`;
+      break;
+    case 'regencies':
+      url = `${BASE_URL}/regencies/${code}.json`;
+      break;
+    case 'districts':
+      url = `${BASE_URL}/districts/${code}.json`;
+      break;
+    case 'villages':
+      url = `${BASE_URL}/villages/${code}.json`;
+      break;
+    default:
+      return [];
+  }
+
+  // Strategy 1: Try direct fetch
+  let response = await fetchDirect(url);
+  
+  // Strategy 2: Try Edge Function
+  if (!response) {
+    response = await fetchViaEdgeFunction(type, code);
   }
   
-  throw lastError;
+  // Strategy 3: Try CORS proxy
+  if (!response) {
+    response = await fetchViaCorsProxy(url);
+  }
+
+  // If all strategies fail, use static data for provinces
+  if (!response) {
+    if (type === 'provinces') {
+      console.log('Using static provinces data');
+      return STATIC_PROVINCES;
+    }
+    throw new Error('All fetch strategies failed');
+  }
+
+  const result: WilayahResponse = await response.json();
+  return result.data || [];
 }
 
 export async function fetchProvinces(): Promise<Region[]> {
@@ -71,14 +209,15 @@ export async function fetchProvinces(): Promise<Region[]> {
   if (cached) return cached;
 
   try {
-    const response = await fetchWithRetry(`${BASE_URL}/provinces.json`);
-    const result: WilayahResponse = await response.json();
-    const data = result.data || [];
-    setCache(cacheKey, data);
+    const data = await fetchWithFallbacks('provinces');
+    if (data.length > 0) {
+      setCache(cacheKey, data);
+    }
     return data;
   } catch (error) {
     console.error('Error fetching provinces:', error);
-    return [];
+    // Return static fallback
+    return STATIC_PROVINCES;
   }
 }
 
@@ -90,10 +229,10 @@ export async function fetchRegencies(provinceCode: string): Promise<Region[]> {
   if (cached) return cached;
 
   try {
-    const response = await fetchWithRetry(`${BASE_URL}/regencies/${provinceCode}.json`);
-    const result: WilayahResponse = await response.json();
-    const data = result.data || [];
-    setCache(cacheKey, data);
+    const data = await fetchWithFallbacks('regencies', provinceCode);
+    if (data.length > 0) {
+      setCache(cacheKey, data);
+    }
     return data;
   } catch (error) {
     console.error('Error fetching regencies:', error);
@@ -109,10 +248,10 @@ export async function fetchDistricts(regencyCode: string): Promise<Region[]> {
   if (cached) return cached;
 
   try {
-    const response = await fetchWithRetry(`${BASE_URL}/districts/${regencyCode}.json`);
-    const result: WilayahResponse = await response.json();
-    const data = result.data || [];
-    setCache(cacheKey, data);
+    const data = await fetchWithFallbacks('districts', regencyCode);
+    if (data.length > 0) {
+      setCache(cacheKey, data);
+    }
     return data;
   } catch (error) {
     console.error('Error fetching districts:', error);
@@ -128,10 +267,10 @@ export async function fetchVillages(districtCode: string): Promise<Region[]> {
   if (cached) return cached;
 
   try {
-    const response = await fetchWithRetry(`${BASE_URL}/villages/${districtCode}.json`);
-    const result: WilayahResponse = await response.json();
-    const data = result.data || [];
-    setCache(cacheKey, data);
+    const data = await fetchWithFallbacks('villages', districtCode);
+    if (data.length > 0) {
+      setCache(cacheKey, data);
+    }
     return data;
   } catch (error) {
     console.error('Error fetching villages:', error);
