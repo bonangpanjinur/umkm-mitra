@@ -11,6 +11,7 @@ import { QuickStats } from '@/components/merchant/QuickStats';
 import { StockAlerts } from '@/components/merchant/StockAlerts';
 import { OrderStatusManager } from '@/components/merchant/OrderStatusManager';
 import { QuotaStatusCard } from '@/components/merchant/QuotaStatusCard';
+import { QuotaAlertBanner } from '@/components/merchant/QuotaAlertBanner';
 import { MerchantGroupCard } from '@/components/merchant/MerchantGroupCard';
 import { StoreQRCode } from '@/components/merchant/StoreQRCode';
 import { Button } from '@/components/ui/button';
@@ -170,6 +171,9 @@ export default function MerchantDashboardPage() {
 
   return (
     <MerchantLayout title="Dashboard" subtitle="Ringkasan toko Anda">
+      {/* Quota Alert Banner - Shows prominently when no quota */}
+      <QuotaAlertBanner />
+
       {/* Store Status Card */}
       <div className="bg-card rounded-xl border border-border p-5 mb-6">
         <div className="flex items-center justify-between flex-wrap gap-4">

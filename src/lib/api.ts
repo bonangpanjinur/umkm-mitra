@@ -26,8 +26,43 @@ const villageImages: Record<string, string> = {
   '22222222-2222-2222-2222-222222222222': villageSukamaju,
 };
 
-// Fetch products from database
+// Helper to get merchant IDs with active quota
+async function getMerchantsWithActiveQuota(): Promise<Set<string>> {
+  const { data } = await supabase
+    .from('merchant_subscriptions')
+    .select('merchant_id')
+    .eq('status', 'ACTIVE')
+    .gte('expired_at', new Date().toISOString())
+    .gt('transaction_quota', supabase.rpc ? 0 : 0); // Ensuring quota > used_quota handled below
+
+  if (!data) return new Set();
+
+  // Filter to only merchants with remaining quota
+  const merchantIds: string[] = [];
+  for (const sub of data) {
+    const { data: subDetail } = await supabase
+      .from('merchant_subscriptions')
+      .select('transaction_quota, used_quota')
+      .eq('merchant_id', sub.merchant_id)
+      .eq('status', 'ACTIVE')
+      .gte('expired_at', new Date().toISOString())
+      .order('expired_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (subDetail && subDetail.transaction_quota > subDetail.used_quota) {
+      merchantIds.push(sub.merchant_id);
+    }
+  }
+
+  return new Set(merchantIds);
+}
+
+// Fetch products from database (only from merchants with active quota)
 export async function fetchProducts(): Promise<Product[]> {
+  // First get merchants with active quota
+  const merchantsWithQuota = await getMerchantsWithActiveQuota();
+
   const { data, error } = await supabase
     .from('products')
     .select(`
@@ -47,7 +82,12 @@ export async function fetchProducts(): Promise<Product[]> {
     return [];
   }
 
-  return (data || []).map(p => ({
+  // Filter out products from merchants without active quota
+  const filteredData = (data || []).filter(p => 
+    merchantsWithQuota.has(p.merchant_id)
+  );
+
+  return filteredData.map(p => ({
     id: p.id,
     merchantId: p.merchant_id,
     merchantName: p.merchants?.name || '',
