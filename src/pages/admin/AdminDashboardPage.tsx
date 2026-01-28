@@ -1,15 +1,18 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Store, MapPin, Bike, ShoppingBag, Receipt, Megaphone, Clock, TrendingUp, DollarSign, Calendar, CheckCheck, X, Users } from 'lucide-react';
+import { Store, MapPin, Bike, Clock, CheckCheck, X, Calendar, RefreshCw } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { StatsCard } from '@/components/admin/StatsCard';
 import { ApprovalCard } from '@/components/admin/ApprovalCard';
 import { SalesAreaChart, OrdersBarChart } from '@/components/admin/SalesChart';
-import { fetchAdminStats, fetchPendingMerchants, fetchPendingVillages, fetchPendingCouriers, approveMerchant, rejectMerchant, approveVillage, rejectVillage, approveCourier, rejectCourier } from '@/lib/adminApi';
-import type { AdminStats, Courier } from '@/types/admin';
+import { RealtimeIndicator } from '@/components/admin/RealtimeIndicator';
+import { LiveActivityFeed } from '@/components/admin/LiveActivityFeed';
+import { LiveStatsGrid } from '@/components/admin/LiveStatsGrid';
+import { useRealtimeStats } from '@/hooks/useRealtimeStats';
+import { fetchPendingMerchants, fetchPendingVillages, fetchPendingCouriers, approveMerchant, rejectMerchant, approveVillage, rejectVillage, approveCourier, rejectCourier } from '@/lib/adminApi';
+import type { Courier } from '@/types/admin';
 import type { Village, Merchant } from '@/types';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { formatPrice } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -49,7 +52,9 @@ interface SelectedItem {
 }
 
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState<AdminStats | null>(null);
+  // Realtime stats hook
+  const { stats: realtimeStats, recentEvents, isConnected, loading: realtimeLoading, refresh: refreshRealtime } = useRealtimeStats();
+  
   const [pendingMerchants, setPendingMerchants] = useState<Merchant[]>([]);
   const [pendingVillages, setPendingVillages] = useState<Village[]>([]);
   const [pendingCouriers, setPendingCouriers] = useState<Courier[]>([]);
@@ -82,9 +87,8 @@ export default function AdminDashboardPage() {
     try {
       const { start } = getDateRange();
       
-      // Fetch all data in parallel
-      const [statsData, merchants, villages, couriers, ordersResult] = await Promise.all([
-        fetchAdminStats(),
+      // Fetch pending approvals and chart data in parallel
+      const [merchants, villages, couriers, ordersResult] = await Promise.all([
         fetchPendingMerchants(),
         fetchPendingVillages(),
         fetchPendingCouriers(),
@@ -95,7 +99,6 @@ export default function AdminDashboardPage() {
           .order('created_at', { ascending: true }),
       ]);
       
-      setStats(statsData);
       setPendingMerchants(merchants);
       setPendingVillages(villages);
       setPendingCouriers(couriers);
@@ -136,18 +139,6 @@ export default function AdminDashboardPage() {
     return result;
   }, [orders, dateRange]);
 
-  // Calculate today's stats
-  const todayStats = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    const todayOrders = orders.filter(o => o.created_at.startsWith(today));
-    const completedOrders = orders.filter(o => o.status === 'DONE');
-    
-    return {
-      todayOrders: todayOrders.length,
-      todayRevenue: todayOrders.filter(o => o.status === 'DONE').reduce((sum, o) => sum + o.total, 0),
-      totalRevenue: completedOrders.reduce((sum, o) => sum + o.total, 0),
-    };
-  }, [orders]);
 
   // Selection handlers
   const handleSelectItem = (item: SelectedItem, checked: boolean) => {
@@ -281,14 +272,32 @@ export default function AdminDashboardPage() {
 
   return (
     <AdminLayout title="Dashboard" subtitle="Kelola dan pantau aktivitas aplikasi">
-      {loading ? (
+      {loading || realtimeLoading ? (
         <div className="flex items-center justify-center py-20">
           <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent" />
         </div>
       ) : (
         <>
-          {/* Date Range Filter */}
-          <div className="flex justify-end mb-4">
+          {/* Realtime Indicator & Date Range Filter */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-4">
+              <RealtimeIndicator 
+                isConnected={isConnected} 
+                lastUpdated={realtimeStats.lastUpdated} 
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  refreshRealtime();
+                  loadData();
+                }}
+                className="text-muted-foreground"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Refresh
+              </Button>
+            </div>
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <Select value={dateRange} onValueChange={setDateRange}>
@@ -304,79 +313,16 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* Revenue & Orders Summary */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <StatsCard
-              title="Pesanan Hari Ini"
-              value={todayStats.todayOrders}
-              icon={<Receipt className="h-5 w-5" />}
-            />
-            <StatsCard
-              title="Pendapatan Hari Ini"
-              value={formatPrice(todayStats.todayRevenue)}
-              icon={<DollarSign className="h-5 w-5" />}
-            />
-            <StatsCard
-              title="Total Pendapatan"
-              value={formatPrice(todayStats.totalRevenue)}
-              icon={<TrendingUp className="h-5 w-5" />}
-              description={`${dateRange === '7days' ? '7' : dateRange === '14days' ? '14' : '30'} hari terakhir`}
-            />
-            <StatsCard
-              title="Pesanan Baru"
-              value={orders.filter(o => o.status === 'NEW').length}
-              icon={<Clock className="h-5 w-5" />}
-              description="Menunggu diproses"
-            />
-          </div>
+          {/* Live Stats Grid - Real-time data */}
+          <LiveStatsGrid stats={realtimeStats} className="mb-8" />
 
-          {/* Charts */}
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <SalesAreaChart data={salesChartData} title={`Pendapatan ${dateRange === '7days' ? '7' : dateRange === '14days' ? '14' : '30'} Hari Terakhir`} />
-            <OrdersBarChart data={salesChartData} title={`Jumlah Pesanan ${dateRange === '7days' ? '7' : dateRange === '14days' ? '14' : '30'} Hari Terakhir`} />
-          </div>
-
-          {/* Entity Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
-            <StatsCard
-              title="Total Pengguna"
-              value={stats?.totalUsers || 0}
-              icon={<Users className="h-5 w-5" />}
-              description={`${stats?.blockedUsers || 0} diblokir`}
-            />
-            <StatsCard
-              title="Total Merchant"
-              value={stats?.totalMerchants || 0}
-              icon={<Store className="h-5 w-5" />}
-              description={`${stats?.pendingMerchants || 0} menunggu`}
-            />
-            <StatsCard
-              title="Total Desa"
-              value={stats?.totalVillages || 0}
-              icon={<MapPin className="h-5 w-5" />}
-              description={`${stats?.pendingVillages || 0} menunggu`}
-            />
-            <StatsCard
-              title="Total Kurir"
-              value={stats?.totalCouriers || 0}
-              icon={<Bike className="h-5 w-5" />}
-              description={`${stats?.pendingCouriers || 0} menunggu`}
-            />
-            <StatsCard
-              title="Total Produk"
-              value={stats?.totalProducts || 0}
-              icon={<ShoppingBag className="h-5 w-5" />}
-            />
-            <StatsCard
-              title="Total Pesanan"
-              value={stats?.totalOrders || 0}
-              icon={<Receipt className="h-5 w-5" />}
-            />
-            <StatsCard
-              title="Total Promosi"
-              value={stats?.totalPromotions || 0}
-              icon={<Megaphone className="h-5 w-5" />}
-            />
+          {/* Charts & Activity Feed */}
+          <div className="grid lg:grid-cols-3 gap-6 mb-8">
+            <div className="lg:col-span-2 space-y-6">
+              <SalesAreaChart data={salesChartData} title={`Pendapatan ${dateRange === '7days' ? '7' : dateRange === '14days' ? '14' : '30'} Hari Terakhir`} />
+              <OrdersBarChart data={salesChartData} title={`Jumlah Pesanan ${dateRange === '7days' ? '7' : dateRange === '14days' ? '14' : '30'} Hari Terakhir`} />
+            </div>
+            <LiveActivityFeed events={recentEvents} />
           </div>
 
           {/* Pending Approvals */}
