@@ -52,14 +52,6 @@ export function ProfileEditor({ userId, initialData, onSave, onCancel }: Profile
     return createEmptyAddressData();
   });
 
-  // Initial names for auto-fill (when we have names but not IDs)
-  const initialNames = {
-    provinceName: initialData.province_name || undefined,
-    cityName: initialData.city_name || undefined,
-    districtName: initialData.district_name || undefined,
-    villageName: initialData.village_name || undefined,
-  };
-
   const handlePhoneValidation = (isValid: boolean) => {
     setPhoneValid(isValid || !phone); // Empty phone is valid
   };
@@ -154,7 +146,6 @@ export function ProfileEditor({ userId, initialData, onSave, onCancel }: Profile
           value={addressData}
           onChange={setAddressData}
           disabled={saving}
-          initialNames={initialNames}
         />
       </div>
 

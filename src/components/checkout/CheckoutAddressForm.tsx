@@ -158,12 +158,6 @@ export function CheckoutAddressForm({
         <AddressSelector
           value={value.address}
           onChange={handleAddressChange}
-          initialNames={{
-            provinceName: value.address.provinceName,
-            cityName: value.address.cityName,
-            districtName: value.address.districtName,
-            villageName: value.address.villageName,
-          }}
         />
         {errors?.address && (
           <p className="text-xs text-destructive">{errors.address}</p>
