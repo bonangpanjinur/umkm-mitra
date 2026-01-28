@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ImageLightbox } from '@/components/ui/ImageLightbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -36,6 +37,15 @@ export function CustomerReviews({ merchantId }: CustomerReviewsProps) {
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unreplied' | 'replied'>('all');
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const openLightbox = (images: string[], index: number) => {
+    setLightboxImages(images);
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
 
   useEffect(() => {
     fetchReviews();
@@ -120,7 +130,7 @@ export function CustomerReviews({ merchantId }: CustomerReviewsProps) {
             key={star}
             className={`h-4 w-4 ${
               star <= rating 
-                ? 'text-yellow-500 fill-yellow-500' 
+                ? 'text-warning fill-warning' 
                 : 'text-muted-foreground'
             }`}
           />
@@ -180,7 +190,7 @@ export function CustomerReviews({ merchantId }: CustomerReviewsProps) {
           </div>
           <div className="text-center p-3 bg-muted rounded-lg">
             <div className="flex items-center justify-center gap-1">
-              <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+              <Star className="h-5 w-5 text-warning fill-warning" />
               <span className="text-2xl font-bold">{stats.avgRating.toFixed(1)}</span>
             </div>
             <p className="text-xs text-muted-foreground">Rating Rata-rata</p>
@@ -258,16 +268,21 @@ export function CustomerReviews({ merchantId }: CustomerReviewsProps) {
                   <p className="text-sm">{review.comment}</p>
                 )}
 
-                {/* Images */}
+                {/* Images with Lightbox */}
                 {review.image_urls && review.image_urls.length > 0 && (
                   <div className="flex gap-2 overflow-x-auto">
                     {review.image_urls.map((url, index) => (
-                      <img
+                      <button
                         key={index}
-                        src={url}
-                        alt={`Review ${index + 1}`}
-                        className="w-20 h-20 rounded object-cover flex-shrink-0"
-                      />
+                        onClick={() => openLightbox(review.image_urls, index)}
+                        className="w-20 h-20 rounded overflow-hidden flex-shrink-0 hover:opacity-90 transition-opacity focus:ring-2 focus:ring-primary focus:outline-none"
+                      >
+                        <img
+                          src={url}
+                          alt={`Review ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
                     ))}
                   </div>
                 )}
@@ -331,6 +346,14 @@ export function CustomerReviews({ merchantId }: CustomerReviewsProps) {
             ))}
           </div>
         )}
+
+        {/* Image Lightbox */}
+        <ImageLightbox
+          images={lightboxImages}
+          initialIndex={lightboxIndex}
+          open={lightboxOpen}
+          onOpenChange={setLightboxOpen}
+        />
       </CardContent>
     </Card>
   );

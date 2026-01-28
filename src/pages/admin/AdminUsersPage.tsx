@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Users, Search, Ban, CheckCircle, Eye, Filter, Download, MoreHorizontal } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Users, Search, Ban, CheckCircle, Eye, Filter, Download, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -64,6 +64,8 @@ export default function AdminUsersPage() {
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [blockReason, setBlockReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
 
   const loadUsers = async () => {
     try {
@@ -186,19 +188,33 @@ export default function AdminUsersPage() {
     }
   };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = 
-      user.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      user.phone?.includes(search) ||
-      user.userId.includes(search);
-    
-    const matchesRole = roleFilter === 'all' || user.roles.includes(roleFilter);
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'blocked' && user.isBlocked) ||
-      (statusFilter === 'active' && !user.isBlocked);
-    
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      const matchesSearch = 
+        user.fullName.toLowerCase().includes(search.toLowerCase()) ||
+        user.phone?.includes(search) ||
+        user.userId.includes(search);
+      
+      const matchesRole = roleFilter === 'all' || user.roles.includes(roleFilter);
+      const matchesStatus = statusFilter === 'all' || 
+        (statusFilter === 'blocked' && user.isBlocked) ||
+        (statusFilter === 'active' && !user.isBlocked);
+      
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [users, search, roleFilter, statusFilter]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredUsers.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedUsers = useMemo(() => {
+    return filteredUsers.slice(startIndex, startIndex + pageSize);
+  }, [filteredUsers, startIndex, pageSize]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, roleFilter, statusFilter]);
 
   const exportToCSV = () => {
     const headers = ['Nama', 'Telepon', 'Role', 'Status', 'Terdaftar'];
@@ -222,9 +238,9 @@ export default function AdminUsersPage() {
     switch (role) {
       case 'admin': return 'bg-destructive text-destructive-foreground';
       case 'merchant': return 'bg-primary text-primary-foreground';
-      case 'courier': return 'bg-chart-2 text-white';
-      case 'verifikator': return 'bg-chart-4 text-white';
-      case 'admin_desa': return 'bg-chart-3 text-white';
+      case 'courier': return 'bg-info text-info-foreground';
+      case 'verifikator': return 'bg-warning text-warning-foreground';
+      case 'admin_desa': return 'bg-success text-success-foreground';
       default: return 'bg-secondary text-secondary-foreground';
     }
   };
@@ -280,7 +296,7 @@ export default function AdminUsersPage() {
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
           <p className="text-sm text-muted-foreground">Pengguna Aktif</p>
-          <p className="text-2xl font-bold text-chart-2">{users.filter(u => !u.isBlocked).length}</p>
+          <p className="text-2xl font-bold text-success">{users.filter(u => !u.isBlocked).length}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
           <p className="text-sm text-muted-foreground">Diblokir</p>
@@ -310,14 +326,14 @@ export default function AdminUsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.length === 0 ? (
+              {paginatedUsers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
                     Tidak ada pengguna ditemukan
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredUsers.map((user) => (
+                paginatedUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -344,7 +360,7 @@ export default function AdminUsersPage() {
                       {user.isBlocked ? (
                         <Badge variant="destructive">Diblokir</Badge>
                       ) : (
-                        <Badge variant="outline" className="text-chart-2 border-chart-2">Aktif</Badge>
+                        <Badge variant="success">Aktif</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -383,6 +399,36 @@ export default function AdminUsersPage() {
               )}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-sm text-muted-foreground">
+            Menampilkan {startIndex + 1}-{Math.min(startIndex + pageSize, filteredUsers.length)} dari {filteredUsers.length}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm px-2">
+              {currentPage} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
 

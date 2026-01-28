@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Receipt, Check, X, Package, MoreHorizontal, User, MapPin, Phone, Truck, CreditCard, MessageSquare, Printer } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Receipt, Check, X, Package, MoreHorizontal, User, MapPin, Phone, Truck, CreditCard, MessageSquare, Printer, RefreshCw, Wifi } from 'lucide-react';
 import { MerchantLayout } from '@/components/merchant/MerchantLayout';
 import { DataTable } from '@/components/admin/DataTable';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { formatPrice } from '@/lib/utils';
 import { OrderInvoice, printInvoice } from '@/components/merchant/OrderInvoice';
+import { useRealtimeOrders } from '@/hooks/useRealtimeOrders';
 
 interface OrderItem {
   id: string;
@@ -53,18 +54,18 @@ export default function MerchantOrdersPage() {
   const { user } = useAuth();
   const [merchantId, setMerchantId] = useState<string | null>(null);
   const [merchantName, setMerchantName] = useState<string>('');
-  const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
+  // Fetch merchant info
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchMerchant = async () => {
       if (!user) return;
 
       try {
@@ -74,32 +75,42 @@ export default function MerchantOrdersPage() {
           .eq('user_id', user.id)
           .maybeSingle();
 
-        if (!merchant) {
-          setLoading(false);
-          return;
+        if (merchant) {
+          setMerchantId(merchant.id);
+          setMerchantName(merchant.name);
         }
-
-        setMerchantId(merchant.id);
-        setMerchantName(merchant.name);
-
-        const { data, error } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('merchant_id', merchant.id)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        setOrders(data || []);
       } catch (error) {
         console.error('Error:', error);
-        toast.error('Gagal memuat pesanan');
-      } finally {
-        setLoading(false);
       }
     };
 
-    fetchOrders();
+    fetchMerchant();
   }, [user]);
+
+  // Real-time orders hook
+  const handleNewOrder = useCallback((order: OrderRow) => {
+    setDetailDialogOpen(false);
+    // Focus on the new order if dialog is closed
+  }, []);
+
+  const { orders, loading, updateOrderStatus, refetch } = useRealtimeOrders({
+    merchantId,
+    onNewOrder: handleNewOrder,
+  });
+
+  // Connection status listener
+  useEffect(() => {
+    const handleOnline = () => setIsConnected(true);
+    const handleOffline = () => setIsConnected(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const viewOrderDetail = async (order: OrderRow) => {
     setSelectedOrder(order);
@@ -131,29 +142,12 @@ export default function MerchantOrdersPage() {
     }
   };
 
-  const updateOrderStatus = async (orderId: string, newStatus: string, reason?: string) => {
-    try {
-      const updateData: Record<string, unknown> = { status: newStatus };
-      if (reason) {
-        updateData.rejection_reason = reason;
-      }
-      
-      const { error } = await supabase
-        .from('orders')
-        .update(updateData)
-        .eq('id', orderId);
-
-      if (error) throw error;
-      
-      setOrders(orders.map(o => 
-        o.id === orderId ? { ...o, status: newStatus } : o
-      ));
-      toast.success('Status pesanan diperbarui');
+  const handleUpdateStatus = async (orderId: string, newStatus: string, reason?: string) => {
+    const success = await updateOrderStatus(orderId, newStatus, reason);
+    if (success) {
       setDetailDialogOpen(false);
       setRejectDialogOpen(false);
       setRejectReason('');
-    } catch (error) {
-      toast.error('Gagal mengubah status');
     }
   };
 
@@ -164,7 +158,7 @@ export default function MerchantOrdersPage() {
 
   const handleReject = () => {
     if (selectedOrder && rejectReason.trim()) {
-      updateOrderStatus(selectedOrder.id, 'CANCELED', rejectReason);
+      handleUpdateStatus(selectedOrder.id, 'CANCELED', rejectReason);
     }
   };
 
@@ -263,7 +257,7 @@ export default function MerchantOrdersPage() {
             <DropdownMenuSeparator />
             {item.status === 'NEW' && (
               <>
-                <DropdownMenuItem onClick={() => updateOrderStatus(item.id, 'PROCESSED')}>
+                <DropdownMenuItem onClick={() => handleUpdateStatus(item.id, 'PROCESSED')}>
                   <Check className="h-4 w-4 mr-2" />
                   Terima Pesanan
                 </DropdownMenuItem>
@@ -274,13 +268,13 @@ export default function MerchantOrdersPage() {
               </>
             )}
             {item.status === 'PROCESSED' && (
-              <DropdownMenuItem onClick={() => updateOrderStatus(item.id, 'SENT')}>
+              <DropdownMenuItem onClick={() => handleUpdateStatus(item.id, 'SENT')}>
                 <Truck className="h-4 w-4 mr-2" />
                 Kirim
               </DropdownMenuItem>
             )}
             {item.status === 'SENT' && (
-              <DropdownMenuItem onClick={() => updateOrderStatus(item.id, 'DONE')}>
+              <DropdownMenuItem onClick={() => handleUpdateStatus(item.id, 'DONE')}>
                 <Check className="h-4 w-4 mr-2" />
                 Selesai
               </DropdownMenuItem>
@@ -317,14 +311,28 @@ export default function MerchantOrdersPage() {
 
   return (
     <MerchantLayout title="Pesanan" subtitle="Kelola pesanan masuk">
-      <div className="flex items-center gap-2 mb-4">
-        <Receipt className="h-5 w-5 text-primary" />
-        <span className="text-muted-foreground text-sm">
-          {orders.length} pesanan
-        </span>
-        {newOrdersCount > 0 && (
-          <Badge variant="info">{newOrdersCount} baru</Badge>
-        )}
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2">
+          <Receipt className="h-5 w-5 text-primary" />
+          <span className="text-muted-foreground text-sm">
+            {orders.length} pesanan
+          </span>
+          {newOrdersCount > 0 && (
+            <Badge variant="info">{newOrdersCount} baru</Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Real-time connection indicator */}
+          <div className="flex items-center gap-1.5 text-xs">
+            <Wifi className={`h-3.5 w-3.5 ${isConnected ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+            <span className={isConnected ? 'text-primary' : 'text-muted-foreground'}>
+              {isConnected ? 'Live' : 'Offline'}
+            </span>
+          </div>
+          <Button variant="outline" size="sm" onClick={refetch}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <DataTable
@@ -439,7 +447,7 @@ export default function MerchantOrdersPage() {
                 <div className="flex gap-2">
                   <Button 
                     className="flex-1"
-                    onClick={() => updateOrderStatus(selectedOrder.id, 'PROCESSED')}
+                    onClick={() => handleUpdateStatus(selectedOrder.id, 'PROCESSED')}
                   >
                     <Check className="h-4 w-4 mr-2" />
                     Terima Pesanan
@@ -459,7 +467,7 @@ export default function MerchantOrdersPage() {
               {selectedOrder.status === 'PROCESSED' && (
                 <Button 
                   className="w-full"
-                  onClick={() => updateOrderStatus(selectedOrder.id, 'SENT')}
+                  onClick={() => handleUpdateStatus(selectedOrder.id, 'SENT')}
                 >
                   <Truck className="h-4 w-4 mr-2" />
                   Kirim
