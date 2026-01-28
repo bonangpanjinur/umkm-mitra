@@ -474,7 +474,7 @@ export default function RegisterMerchantPage() {
 
                 <div className="bg-muted/50 rounded-xl p-4">
                   <p className="text-xs text-muted-foreground">
-                    <strong>Belum punya kode?</strong> Hubungi admin atau verifikator di desa wisata terdekat untuk mendapatkan kode referral.
+                    <strong>Tidak punya kode?</strong> Tidak masalah! Anda bisa langsung lanjut tanpa kode referral. Kode ini opsional dan bisa ditambahkan nanti.
                   </p>
                 </div>
               </motion.div>
