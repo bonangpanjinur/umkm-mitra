@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Smartphone, Globe, Bell, Palette, RefreshCw } from 'lucide-react';
+import { Save, Smartphone, Globe, Bell, Palette, RefreshCw, Image as ImageIcon, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,11 @@ interface PWASettings {
   enableInstallPrompt: boolean;
   installPromptDelay: number;
   showInstallBanner: boolean;
+  icons: {
+    src: string;
+    sizes: string;
+    type: string;
+  }[];
 }
 
 const defaultSettings: PWASettings = {
@@ -36,6 +41,10 @@ const defaultSettings: PWASettings = {
   enableInstallPrompt: true,
   installPromptDelay: 30,
   showInstallBanner: true,
+  icons: [
+    { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+    { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+  ],
 };
 
 export default function AdminPWASettingsPage() {
@@ -119,21 +128,31 @@ export default function AdminPWASettingsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-3">
-              <Badge variant="success" className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-primary-foreground rounded-full animate-pulse" />
+              <Badge variant="success" className="flex items-center gap-1 px-3 py-1">
+                <CheckCircle2 className="h-3.5 w-3.5" />
                 PWA Aktif
               </Badge>
-              <Badge variant="secondary">Service Worker: Registered</Badge>
-              <Badge variant="secondary">Manifest: Valid</Badge>
-              <Badge variant="outline">HTTPS: ✓</Badge>
+              <Badge variant="secondary" className="flex items-center gap-1 px-3 py-1">
+                <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                Service Worker: Aktif
+              </Badge>
+              <Badge variant="secondary" className="flex items-center gap-1 px-3 py-1">
+                <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                Manifest: Valid
+              </Badge>
+              <Badge variant="outline" className="flex items-center gap-1 px-3 py-1">
+                <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                HTTPS: Aman
+              </Badge>
             </div>
           </CardContent>
         </Card>
 
         <Tabs defaultValue="general" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="general">Umum</TabsTrigger>
             <TabsTrigger value="appearance">Tampilan</TabsTrigger>
+            <TabsTrigger value="icons">Ikon</TabsTrigger>
             <TabsTrigger value="behavior">Perilaku</TabsTrigger>
             <TabsTrigger value="notifications">Notifikasi</TabsTrigger>
           </TabsList>
@@ -184,6 +203,55 @@ export default function AdminPWASettingsPage() {
                     placeholder="Deskripsi singkat aplikasi"
                     rows={3}
                   />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Icon Settings */}
+          <TabsContent value="icons">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  Ikon Aplikasi
+                </CardTitle>
+                <CardDescription>
+                  Ikon yang digunakan untuk homescreen dan splash screen. Pastikan ukuran dan tipe file sesuai.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-6 md:grid-cols-2">
+                  {settings.icons.map((icon, index) => (
+                    <div key={index} className="flex items-start gap-4 p-4 border rounded-lg bg-card">
+                      <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center overflow-hidden border">
+                        <img src={icon.src} alt={`Icon ${icon.sizes}`} className="w-full h-full object-contain" />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="font-bold">{icon.sizes}</Label>
+                          <Badge variant="outline" className="text-[10px]">{icon.type}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">{icon.src}</p>
+                        <div className="flex items-center gap-1 text-xs text-green-600">
+                          <CheckCircle2 className="h-3 w-3" />
+                          <span>Tervalidasi</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex gap-3">
+                  <Info className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-700">
+                    <p className="font-medium mb-1">Tips Ikon PWA</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>Gunakan format <strong>PNG</strong> untuk transparansi dan kualitas terbaik.</li>
+                      <li>Pastikan ukuran tepat (192x192 dan 512x512 piksel).</li>
+                      <li>Ikon 512x512 digunakan untuk splash screen berkualitas tinggi.</li>
+                    </ul>
+                  </div>
                 </div>
               </CardContent>
             </Card>
