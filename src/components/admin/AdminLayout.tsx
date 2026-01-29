@@ -17,6 +17,8 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
   const [pendingCouriers, setPendingCouriers] = useState(0);
   const [pendingWithdrawals, setPendingWithdrawals] = useState(0);
   const [pendingVerifikatorWithdrawals, setPendingVerifikatorWithdrawals] = useState(0);
+  const [pendingOrders, setPendingOrders] = useState(0);
+  const [pendingRefunds, setPendingRefunds] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -42,6 +44,20 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
           .select('*', { count: 'exact', head: true })
           .eq('status', 'PENDING');
         setPendingVerifikatorWithdrawals(verifikatorWithdrawals || 0);
+
+        // Fetch pending orders count
+        const { count: ordersCount } = await supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'NEW');
+        setPendingOrders(ordersCount || 0);
+
+        // Fetch pending refunds count
+        const { count: refundsCount } = await supabase
+          .from('refund_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'PENDING');
+        setPendingRefunds(refundsCount || 0);
       } catch (error) {
         console.error('Error loading stats:', error);
       }
@@ -70,6 +86,8 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
           pendingMerchants={pendingMerchants}
           pendingVillages={pendingVillages}
           pendingCouriers={pendingCouriers}
+          pendingOrders={pendingOrders}
+          pendingRefunds={pendingRefunds}
           pendingWithdrawals={pendingWithdrawals}
           pendingVerifikatorWithdrawals={pendingVerifikatorWithdrawals}
         />

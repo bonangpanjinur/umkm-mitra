@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Receipt, Eye, MoreHorizontal, User, MapPin, Phone, Package, Truck, CreditCard, AlertCircle, Check, X, Zap } from 'lucide-react';
+import { Receipt, Eye, MoreHorizontal, Package, Truck, AlertCircle } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { DataTable } from '@/components/admin/DataTable';
 import { CourierAssignDialog } from '@/components/admin/CourierAssignDialog';
+import { OrderDetailsDialog } from '@/components/order/OrderDetailsDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,19 +13,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatPrice } from '@/lib/utils';
@@ -54,23 +42,13 @@ interface OrderRow {
   merchants: { name: string } | null;
 }
 
-interface Courier {
-  id: string;
-  name: string;
-  phone: string;
-  is_available: boolean;
-}
-
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [couriers, setCouriers] = useState<Courier[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [courierAssignDialogOpen, setCourierAssignDialogOpen] = useState(false);
-  const [selectedCourier, setSelectedCourier] = useState<string>('');
 
   const fetchOrders = async () => {
     try {
@@ -89,19 +67,8 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const fetchCouriers = async () => {
-    const { data } = await supabase
-      .from('couriers')
-      .select('id, name, phone, is_available')
-      .eq('status', 'ACTIVE')
-      .eq('registration_status', 'APPROVED');
-    
-    setCouriers(data || []);
-  };
-
   useEffect(() => {
     fetchOrders();
-    fetchCouriers();
   }, []);
 
   const viewOrderDetail = async (order: OrderRow) => {
@@ -144,29 +111,6 @@ export default function AdminOrdersPage() {
   const openAssignDialog = (order: OrderRow) => {
     setSelectedOrder(order);
     setCourierAssignDialogOpen(true);
-  };
-
-  const assignCourier = async () => {
-    if (!selectedOrder || !selectedCourier) return;
-
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ 
-          courier_id: selectedCourier,
-          assigned_at: new Date().toISOString(),
-          status: selectedOrder.status === 'NEW' ? 'PROCESSED' : selectedOrder.status,
-        })
-        .eq('id', selectedOrder.id);
-
-      if (error) throw error;
-      
-      toast.success('Kurir berhasil ditugaskan');
-      fetchOrders();
-      setAssignDialogOpen(false);
-    } catch (error) {
-      toast.error('Gagal menugaskan kurir');
-    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -366,204 +310,17 @@ export default function AdminOrdersPage() {
         emptyMessage="Belum ada pesanan"
       />
 
-      {/* Order Detail Dialog */}
-      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              Detail Pesanan #{selectedOrder?.id.slice(0, 8).toUpperCase()}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedOrder && (
-            <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
-              {/* Status Row */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Status:</span>
-                  {getStatusBadge(selectedOrder.status)}
-                </div>
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  {getPaymentBadge(selectedOrder.payment_status)}
-                </div>
-              </div>
+      <OrderDetailsDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        order={selectedOrder}
+        orderItems={orderItems}
+        onUpdateStatus={updateOrderStatus}
+        onOpenAssignCourier={openAssignDialog}
+        getStatusBadge={getStatusBadge}
+        getPaymentBadge={getPaymentBadge}
+      />
 
-              {/* Merchant */}
-              <div className="bg-secondary/50 rounded-lg p-3">
-                <p className="text-sm text-muted-foreground">Merchant</p>
-                <p className="font-medium">{selectedOrder.merchants?.name || '-'}</p>
-              </div>
-
-              {/* Customer Info */}
-              <div className="bg-secondary/50 rounded-lg p-4 space-y-2">
-                <p className="text-sm font-medium mb-2">Informasi Pengiriman</p>
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span>{selectedOrder.delivery_name || 'Pelanggan'}</span>
-                </div>
-                {selectedOrder.delivery_phone && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{selectedOrder.delivery_phone}</span>
-                  </div>
-                )}
-                {selectedOrder.delivery_address && (
-                  <div className="flex items-start gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <span>{selectedOrder.delivery_address}</span>
-                  </div>
-                )}
-                <Badge variant="outline" className="mt-2">
-                  {selectedOrder.delivery_type === 'PICKUP' ? 'Ambil Sendiri' : 'Diantar Kurir'}
-                </Badge>
-              </div>
-
-              {/* Items */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Item Pesanan</p>
-                <div className="border border-border rounded-lg divide-y divide-border">
-                  {orderItems.map((item) => (
-                    <div key={item.id} className="p-3 flex justify-between">
-                      <div>
-                        <p className="font-medium text-sm">{item.product_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.quantity} x {formatPrice(item.product_price)}
-                        </p>
-                      </div>
-                      <p className="font-medium text-sm">
-                        {formatPrice(item.subtotal)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Notes */}
-              {selectedOrder.notes && (
-                <div className="text-sm bg-muted/50 rounded-lg p-3">
-                  <p className="text-muted-foreground mb-1">Catatan:</p>
-                  <p>{selectedOrder.notes}</p>
-                </div>
-              )}
-
-              {/* Totals */}
-              <div className="border-t border-border pt-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Subtotal</span>
-                  <span>{formatPrice(selectedOrder.subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Ongkir</span>
-                  <span>{formatPrice(selectedOrder.shipping_cost)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-lg">
-                  <span>Total</span>
-                  <span className="text-primary">{formatPrice(selectedOrder.total)}</span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2 pt-2">
-                {selectedOrder.status === 'NEW' && (
-                  <>
-                    <Button 
-                      className="flex-1"
-                      onClick={() => updateOrderStatus(selectedOrder.id, 'PROCESSED')}
-                    >
-                      <Check className="h-4 w-4 mr-2" />
-                      Terima & Proses
-                    </Button>
-                    <Button 
-                      variant="destructive"
-                      onClick={() => updateOrderStatus(selectedOrder.id, 'CANCELLED')}
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Tolak
-                    </Button>
-                  </>
-                )}
-                {selectedOrder.status === 'PROCESSED' && (
-                  <Button 
-                    className="flex-1"
-                    onClick={() => updateOrderStatus(selectedOrder.id, 'SENT')}
-                  >
-                    <Truck className="h-4 w-4 mr-2" />
-                    Kirim
-                  </Button>
-                )}
-                {selectedOrder.status === 'SENT' && (
-                  <Button 
-                    className="flex-1"
-                    onClick={() => updateOrderStatus(selectedOrder.id, 'DONE')}
-                  >
-                    <Check className="h-4 w-4 mr-2" />
-                    Selesai
-                  </Button>
-                )}
-                {selectedOrder.delivery_type === 'INTERNAL' && !selectedOrder.courier_id && (
-                  <Button 
-                    variant="outline"
-                    onClick={() => {
-                      setDetailDialogOpen(false);
-                      openAssignDialog(selectedOrder);
-                    }}
-                  >
-                    Tugaskan Kurir
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Assign Courier Dialog */}
-      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Tugaskan Kurir</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-muted-foreground">
-              Pilih kurir untuk pesanan #{selectedOrder?.id.slice(0, 8).toUpperCase()}
-            </p>
-            
-            <Select value={selectedCourier} onValueChange={setSelectedCourier}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih kurir..." />
-              </SelectTrigger>
-              <SelectContent>
-                {couriers.map((courier) => (
-                  <SelectItem key={courier.id} value={courier.id}>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${courier.is_available ? 'bg-primary' : 'bg-muted-foreground'}`} />
-                      <span>{courier.name}</span>
-                      <span className="text-muted-foreground text-xs">({courier.phone})</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {couriers.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Tidak ada kurir aktif yang tersedia
-              </p>
-            )}
-
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setAssignDialogOpen(false)}>
-                Batal
-              </Button>
-              <Button className="flex-1" onClick={assignCourier} disabled={!selectedCourier}>
-                Tugaskan
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* New Courier Assign Dialog with Auto-Assign */}
       {selectedOrder && (
         <CourierAssignDialog
           open={courierAssignDialogOpen}
