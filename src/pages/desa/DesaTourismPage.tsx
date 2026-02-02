@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Mountain, Plus, Edit, MoreHorizontal, ImageIcon, Eye, MapPin } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Mountain, Plus, Edit, MoreHorizontal, ImageIcon, Eye } from 'lucide-react';
 import { DesaLayout } from '@/components/desa/DesaLayout';
 import { DataTable } from '@/components/admin/DataTable';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { ImageUpload } from '@/components/ui/ImageUpload';
+import { TourismFilters, TourismFilterOptions } from '@/components/desa/TourismFilters';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -59,6 +60,11 @@ const defaultForm: TourismForm = {
   is_active: true,
 };
 
+const defaultFilters: TourismFilterOptions = {
+  status: 'all',
+  facility: null,
+};
+
 export default function DesaTourismPage() {
   const { user } = useAuth();
   const [villageId, setVillageId] = useState<string | null>(null);
@@ -68,6 +74,29 @@ export default function DesaTourismPage() {
   const [editingTourism, setEditingTourism] = useState<TourismRow | null>(null);
   const [form, setForm] = useState<TourismForm>(defaultForm);
   const [saving, setSaving] = useState(false);
+  const [filters, setFilters] = useState<TourismFilterOptions>(defaultFilters);
+
+  // Extract unique facilities from all tourism data
+  const availableFacilities = useMemo(() => {
+    const allFacilities = tourism.flatMap(t => t.facilities || []);
+    return [...new Set(allFacilities)].sort();
+  }, [tourism]);
+
+  // Apply filters to tourism data
+  const filteredTourism = useMemo(() => {
+    return tourism.filter(item => {
+      // Status filter
+      if (filters.status === 'active' && !item.is_active) return false;
+      if (filters.status === 'inactive' && item.is_active) return false;
+
+      // Facility filter
+      if (filters.facility && !(item.facilities || []).includes(filters.facility)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [tourism, filters]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -281,7 +310,9 @@ export default function DesaTourismPage() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Mountain className="h-5 w-5 text-primary" />
-          <span className="text-muted-foreground text-sm">{tourism.length} wisata</span>
+          <span className="text-muted-foreground text-sm">
+            {filteredTourism.length} dari {tourism.length} wisata
+          </span>
         </div>
         <Button onClick={openCreateDialog}>
           <Plus className="h-4 w-4 mr-2" />
@@ -289,13 +320,22 @@ export default function DesaTourismPage() {
         </Button>
       </div>
 
+      {/* Filters */}
+      <div className="mb-4">
+        <TourismFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          availableFacilities={availableFacilities}
+        />
+      </div>
+
       <DataTable
-        data={tourism}
+        data={filteredTourism}
         columns={columns}
         searchKey="name"
         searchPlaceholder="Cari nama wisata..."
         loading={loading}
-        emptyMessage="Belum ada wisata terdaftar"
+        emptyMessage={filters.status !== 'all' || filters.facility ? "Tidak ada wisata sesuai filter" : "Belum ada wisata terdaftar"}
       />
 
       {/* Tourism Dialog */}
