@@ -28,7 +28,7 @@ import { formatPrice } from '@/lib/utils';
 interface TransactionPackage {
   id: string;
   name: string;
-  total_price: number;
+  price_per_transaction: number;
   kas_fee: number;
   transaction_quota: number;
   validity_days: number;
@@ -43,10 +43,10 @@ export default function AdminPackagesPage() {
   const [editingPackage, setEditingPackage] = useState<TransactionPackage | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    total_price: 25000,
-    kas_fee: 10,
+    price_per_transaction: 500,
+    kas_fee: 200,
     transaction_quota: 50,
-    validity_days: 30,
+    validity_days: 0,
     description: '',
     is_active: true,
   });
@@ -96,7 +96,7 @@ export default function AdminPackagesPage() {
       fetchPackages();
     } catch (error) {
       console.error('Error saving package:', error);
-      toast.error('Gagal menyimpan paket');
+      toast.error('Gagal menyimpan paket. Periksa kembali input Anda.');
     }
   };
 
@@ -114,7 +114,7 @@ export default function AdminPackagesPage() {
       fetchPackages();
     } catch (error) {
       console.error('Error deleting package:', error);
-      toast.error('Gagal menghapus paket. Mungkin masih digunakan.');
+      toast.error('Gagal menghapus paket. Mungkin masih digunakan oleh merchant.');
     }
   };
 
@@ -122,7 +122,7 @@ export default function AdminPackagesPage() {
     setEditingPackage(pkg);
     setFormData({
       name: pkg.name,
-      total_price: pkg.total_price,
+      price_per_transaction: pkg.price_per_transaction,
       kas_fee: pkg.kas_fee,
       transaction_quota: pkg.transaction_quota,
       validity_days: pkg.validity_days,
@@ -136,10 +136,10 @@ export default function AdminPackagesPage() {
     setEditingPackage(null);
     setFormData({
       name: '',
-      total_price: 25000,
-      kas_fee: 10,
+      price_per_transaction: 500,
+      kas_fee: 200,
       transaction_quota: 50,
-      validity_days: 30,
+      validity_days: 0,
       description: '',
       is_active: true,
     });
@@ -186,12 +186,12 @@ export default function AdminPackagesPage() {
               <CardContent>
                 <div className="grid grid-cols-2 gap-3 text-sm mb-4">
                   <div>
-                    <p className="text-muted-foreground">Harga Paket</p>
-                    <p className="font-medium">{formatPrice(pkg.total_price)}</p>
+                    <p className="text-muted-foreground">Biaya Per Transaksi</p>
+                    <p className="font-medium">{formatPrice(pkg.price_per_transaction)}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Komisi Kelompok</p>
-                    <p className="font-medium">{pkg.kas_fee}%</p>
+                    <p className="font-medium">{formatPrice(pkg.kas_fee)}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Kuota</p>
@@ -241,18 +241,17 @@ export default function AdminPackagesPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Harga Paket (Rp)</Label>
+                <Label>Biaya Per Transaksi (Rp)</Label>
                 <Input
                   type="number"
-                  value={formData.total_price}
-                  onChange={(e) => setFormData({ ...formData, total_price: Number(e.target.value) })}
+                  value={formData.price_per_transaction}
+                  onChange={(e) => setFormData({ ...formData, price_per_transaction: Number(e.target.value) })}
                 />
               </div>
               <div>
-                <Label>Komisi Kelompok (%)</Label>
+                <Label>Komisi Kelompok (Rp)</Label>
                 <Input
                   type="number"
-                  step="0.01"
                   value={formData.kas_fee}
                   onChange={(e) => setFormData({ ...formData, kas_fee: Number(e.target.value) })}
                 />
