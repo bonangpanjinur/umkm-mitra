@@ -1,20 +1,36 @@
 -- ====================================================================
--- MIGRASI: UPDATE LOGIKA PAKET GENERAL & KLASIFIKASI HARGA DINAMIS
+-- MIGRASI: UPDATE LOGIKA PAKET GENERAL & KLASIFIKASI HARGA DINAMIS (REVISI)
 -- ====================================================================
 
--- 1. Modifikasi tabel transaction_packages
--- Menghapus kolom classification_price karena paket sekarang bersifat general
--- validity_days tetap ada tapi secara default tidak digunakan (tanpa masa aktif)
-ALTER TABLE public.transaction_packages 
-DROP COLUMN IF EXISTS classification_price;
+-- 1. Pastikan tabel transaction_packages ada
+CREATE TABLE IF NOT EXISTS public.transaction_packages (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  price_per_transaction INTEGER NOT NULL DEFAULT 0,
+  kas_fee INTEGER NOT NULL DEFAULT 0,
+  transaction_quota INTEGER NOT NULL DEFAULT 100,
+  validity_days INTEGER NOT NULL DEFAULT 30,
+  description TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- 2. Modifikasi tabel transaction_packages
+-- Menghapus kolom classification_price jika ada
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transaction_packages' AND column_name='classification_price') THEN
+        ALTER TABLE public.transaction_packages DROP COLUMN classification_price;
+    END IF;
+END $$;
 
 -- Menambahkan komentar untuk memperjelas fungsi kolom
 COMMENT ON COLUMN public.transaction_packages.transaction_quota IS 'Total kuota transaksi (kredit) yang didapat dari paket ini';
 COMMENT ON COLUMN public.transaction_packages.price_per_transaction IS 'Biaya per transaksi dalam paket ini';
 COMMENT ON COLUMN public.transaction_packages.kas_fee IS 'Komisi kelompok/kas per transaksi';
 
--- 2. Pastikan tabel quota_tiers ada (dari migrasi sebelumnya)
--- Jika belum ada, buat tabelnya
+-- 3. Pastikan tabel quota_tiers ada
 CREATE TABLE IF NOT EXISTS public.quota_tiers (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   min_price INTEGER NOT NULL,
@@ -24,7 +40,8 @@ CREATE TABLE IF NOT EXISTS public.quota_tiers (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- Aktifkan RLS jika baru dibuat
+-- Aktifkan RLS
+ALTER TABLE public.transaction_packages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.quota_tiers ENABLE ROW LEVEL SECURITY;
 
 -- Kebijakan RLS untuk quota_tiers
@@ -39,14 +56,26 @@ BEGIN
     END IF;
 END $$;
 
--- 3. Update data paket default (General)
+-- Kebijakan RLS untuk transaction_packages (jika belum ada)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'transaction_packages' AND policyname = 'Anyone can view active packages') THEN
+        CREATE POLICY "Anyone can view active packages" ON public.transaction_packages FOR SELECT USING (is_active = true);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'transaction_packages' AND policyname = 'Admins can manage packages') THEN
+        CREATE POLICY "Admins can manage packages" ON public.transaction_packages FOR ALL USING (is_admin());
+    END IF;
+END $$;
+
+-- 4. Update data paket default (General)
 DELETE FROM public.transaction_packages;
 INSERT INTO public.transaction_packages (name, price_per_transaction, kas_fee, transaction_quota, validity_days, description, is_active) VALUES
 ('Paket Hemat', 500, 200, 50, 0, 'Paket dasar untuk pemula tanpa masa aktif', true),
 ('Paket Reguler', 450, 150, 100, 0, 'Paket standar untuk usaha menengah tanpa masa aktif', true),
 ('Paket Premium', 400, 100, 250, 0, 'Paket terbaik dengan biaya transaksi termurah tanpa masa aktif', true);
 
--- 4. Update data tier kuota default sesuai permintaan user
+-- 5. Update data tier kuota default sesuai permintaan user
 DELETE FROM public.quota_tiers;
 INSERT INTO public.quota_tiers (min_price, max_price, credit_cost) VALUES
 (0, 3000, 1),
@@ -54,12 +83,16 @@ INSERT INTO public.quota_tiers (min_price, max_price, credit_cost) VALUES
 (5001, 10000, 2), -- Contoh user: > 5000 dan < 10000 menghabiskan 2 kuota
 (10001, NULL, 3);
 
--- 5. Modifikasi tabel merchants
--- Menghapus kolom classification_price karena sudah tidak digunakan di level merchant
-ALTER TABLE public.merchants 
-DROP COLUMN IF EXISTS classification_price;
+-- 6. Modifikasi tabel merchants
+-- Menghapus kolom classification_price jika ada
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='merchants' AND column_name='classification_price') THEN
+        ALTER TABLE public.merchants DROP COLUMN classification_price;
+    END IF;
+END $$;
 
--- 6. Update fungsi kalkulasi biaya kredit (kredit per transaksi)
+-- 7. Update fungsi kalkulasi biaya kredit (kredit per transaksi)
 CREATE OR REPLACE FUNCTION public.calculate_item_credit_cost(p_price INTEGER)
 RETURNS INTEGER
 LANGUAGE plpgsql
@@ -79,7 +112,7 @@ BEGIN
 END;
 $$;
 
--- 7. Update fungsi use_merchant_quota_v2 untuk mendukung pengurangan kuota dinamis
+-- 8. Update fungsi use_merchant_quota_v2 untuk mendukung pengurangan kuota dinamis
 CREATE OR REPLACE FUNCTION public.use_merchant_quota_v2(p_merchant_id UUID, p_credits INTEGER)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -113,7 +146,7 @@ BEGIN
 END;
 $$;
 
--- 8. Update fungsi check_merchant_quota untuk mendukung logika baru
+-- 9. Update fungsi check_merchant_quota untuk mendukung logika baru
 CREATE OR REPLACE FUNCTION public.check_merchant_quota(p_merchant_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
