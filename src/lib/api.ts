@@ -1,14 +1,14 @@
-import { supabase } from '@/integrations/supabase/client';
-import type { Product, Village, Tourism, Merchant } from '@/types';
+import { supabase } from '../integrations/supabase/client';
+import type { Product, Village, Tourism, Merchant } from '../types';
 
 // Import local images as fallbacks
-import heroVillage from '@/assets/hero-village.jpg';
-import villageBojong from '@/assets/village-bojong.jpg';
-import villageSukamaju from '@/assets/village-sukamaju.jpg';
-import productKeripik from '@/assets/product-keripik.jpg';
-import productKopi from '@/assets/product-kopi.jpg';
-import productAnyaman from '@/assets/product-anyaman.jpg';
-import productSambal from '@/assets/product-sambal.jpg';
+import heroVillage from '../assets/hero-village.jpg';
+import villageBojong from '../assets/village-bojong.jpg';
+import villageSukamaju from '../assets/village-sukamaju.jpg';
+import productKeripik from '../assets/product-keripik.jpg';
+import productKopi from '../assets/product-kopi.jpg';
+import productAnyaman from '../assets/product-anyaman.jpg';
+import productSambal from '../assets/product-sambal.jpg';
 
 export const heroImage = heroVillage;
 
@@ -28,12 +28,14 @@ const villageImages: Record<string, string> = {
 
 // Helper to get merchant IDs with active quota
 async function getMerchantsWithActiveQuota(): Promise<Set<string>> {
+  console.log('Checking merchants with active quota...');
   const { data } = await supabase
     .from('merchant_subscriptions')
     .select('merchant_id, transaction_quota, used_quota')
     .eq('status', 'ACTIVE')
     .gte('expired_at', new Date().toISOString());
 
+  console.log('Merchant subscriptions result:', data);
   if (!data) return new Set();
 
   // Filter to only merchants with remaining quota
@@ -68,6 +70,7 @@ export async function fetchProducts(): Promise<Product[]> {
   // First get merchants with active quota
   const merchantsWithQuota = await getMerchantsWithActiveQuota();
 
+  console.log('Fetching products from Supabase...');
   const { data, error } = await supabase
     .from('products')
     .select(`
@@ -86,15 +89,16 @@ export async function fetchProducts(): Promise<Product[]> {
           location_lng
         )
       )
-    `)
-    .eq('is_active', true);
+    `);
+    // .eq('is_active', true);
 
+  console.log('Products raw data result:', data);
   if (error) {
     console.error('Error fetching products:', error);
     return [];
   }
 
-  return (data || []).map(p => {
+  const mappedProducts = (data || []).map(p => {
     const hasQuota = merchantsWithQuota.has(p.merchant_id);
     const merchant = p.merchants;
     
@@ -136,6 +140,9 @@ export async function fetchProducts(): Promise<Product[]> {
       locationLng,
     };
   });
+
+  console.log('Mapped products data:', mappedProducts);
+  return mappedProducts;
 }
 
 // Fetch single product
@@ -224,17 +231,19 @@ export async function fetchMerchant(id: string): Promise<Merchant | null> {
 
 // Fetch villages
 export async function fetchVillages(): Promise<Village[]> {
+  console.log('Fetching villages from Supabase...');
   const { data, error } = await supabase
     .from('villages')
-    .select('*')
-    .eq('is_active', true);
+    .select('*');
+    // .eq('is_active', true);
 
+  console.log('Villages raw data result:', data);
   if (error) {
     console.error('Error fetching villages:', error);
     return [];
   }
 
-  return (data || []).map(v => ({
+  const mappedVillages = (data || []).map(v => ({
     id: v.id,
     name: v.name,
     district: v.district,
@@ -245,10 +254,14 @@ export async function fetchVillages(): Promise<Village[]> {
     locationLat: v.location_lat ? Number(v.location_lat) : null,
     locationLng: v.location_lng ? Number(v.location_lng) : null,
   }));
+
+  console.log('Mapped villages data:', mappedVillages);
+  return mappedVillages;
 }
 
 // Fetch tourism spots
 export async function fetchTourism(): Promise<Tourism[]> {
+  console.log('Fetching tourism from Supabase...');
   const { data, error } = await supabase
     .from('tourism')
     .select(`
@@ -256,15 +269,16 @@ export async function fetchTourism(): Promise<Tourism[]> {
       villages (
         name
       )
-    `)
-    .eq('is_active', true);
+    `);
+    // .eq('is_active', true);
 
+  console.log('Tourism raw data result:', data);
   if (error) {
     console.error('Error fetching tourism:', error);
     return [];
   }
 
-  return (data || []).map(t => ({
+  const mappedTourism = (data || []).map(t => ({
     id: t.id,
     villageId: t.village_id,
     villageName: t.villages?.name || '',
@@ -279,6 +293,9 @@ export async function fetchTourism(): Promise<Tourism[]> {
     isActive: t.is_active,
     viewCount: t.view_count,
   }));
+
+  console.log('Mapped tourism data:', mappedTourism);
+  return mappedTourism;
 }
 
 // Fetch single tourism

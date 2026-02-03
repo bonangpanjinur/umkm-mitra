@@ -2,14 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MapPin } from 'lucide-react';
-import { Header } from '@/components/layout/Header';
-import { BottomNav } from '@/components/layout/BottomNav';
-import { SearchBar } from '@/components/ui/SearchBar';
-import { ProductCard } from '@/components/ProductCard';
-import { fetchProducts, categories } from '@/lib/api';
-import { useUserLocation, sortByDistance } from '@/hooks/useUserLocation';
-import { cn } from '@/lib/utils';
-import type { Product } from '@/types';
+import { Header } from '../components/layout/Header';
+import { BottomNav } from '../components/layout/BottomNav';
+import { SearchBar } from '../components/ui/SearchBar';
+import { ProductCard } from '../components/ProductCard';
+import { fetchProducts, categories } from '../lib/api';
+import { useUserLocation, sortByDistance } from '../hooks/useUserLocation';
+import { cn } from '../lib/utils';
+import type { Product } from '../types';
 
 export default function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -23,7 +23,9 @@ export default function ProductsPage() {
   useEffect(() => {
     async function loadData() {
       try {
+        console.log('Loading products data via fetchProducts...');
         const data = await fetchProducts();
+        console.log('Products data loaded:', data);
         setProducts(data);
       } catch (error) {
         console.error('Error loading products:', error);

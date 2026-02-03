@@ -2,22 +2,22 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Camera, ShoppingBag } from 'lucide-react';
-import { Header } from '@/components/layout/Header';
-import { BottomNav } from '@/components/layout/BottomNav';
-import { FloatingCartButton } from '@/components/layout/FloatingCartButton';
-import { SearchBarAdvanced } from '@/components/explore/SearchBarAdvanced';
-import { VillageCardLarge } from '@/components/explore/VillageCardLarge';
-import { TourismCardCompact } from '@/components/explore/TourismCardCompact';
-import { ProductCardHorizontal } from '@/components/explore/ProductCardHorizontal';
-import { SectionHeader } from '@/components/explore/SectionHeader';
-import { CategoryTabs, ExploreCategory } from '@/components/explore/CategoryTabs';
-import { FilterSheet, FilterButton, FilterOptions } from '@/components/explore/FilterSheet';
-import { SortDropdown, SortOption } from '@/components/explore/SortDropdown';
-import { EmptyState } from '@/components/explore/EmptyState';
-import { useSearchHistory } from '@/hooks/useSearchHistory';
-import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
-import { fetchVillages, fetchTourism, fetchProducts } from '@/lib/api';
-import type { Village, Tourism, Product } from '@/types';
+import { Header } from '../components/layout/Header';
+import { BottomNav } from '../components/layout/BottomNav';
+import { FloatingCartButton } from '../components/layout/FloatingCartButton';
+import { SearchBarAdvanced } from '../components/explore/SearchBarAdvanced';
+import { VillageCardLarge } from '../components/explore/VillageCardLarge';
+import { TourismCardCompact } from '../components/explore/TourismCardCompact';
+import { ProductCardHorizontal } from '../components/explore/ProductCardHorizontal';
+import { SectionHeader } from '../components/explore/SectionHeader';
+import { CategoryTabs, ExploreCategory } from '../components/explore/CategoryTabs';
+import { FilterSheet, FilterButton, FilterOptions } from '../components/explore/FilterSheet';
+import { SortDropdown, SortOption } from '../components/explore/SortDropdown';
+import { EmptyState } from '../components/explore/EmptyState';
+import { useSearchHistory } from '../hooks/useSearchHistory';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import { fetchVillages, fetchTourism, fetchProducts } from '../lib/api';
+import type { Village, Tourism, Product } from '../types';
 
 const ITEMS_PER_PAGE = 10;
 const POPULAR_SEARCHES = ['Kopi Arabika', 'Batik Tulis', 'Wisata Alam', 'Keripik Singkong', 'Anyaman Bambu'];
@@ -48,11 +48,16 @@ export default function ExplorePage() {
   useEffect(() => {
     async function loadData() {
       try {
+        console.log('Loading all data for ExplorePage...');
         const [villagesData, tourismData, productsData] = await Promise.all([
           fetchVillages(),
           fetchTourism(),
           fetchProducts(),
         ]);
+        console.log('Villages data:', villagesData);
+        console.log('Tourism data:', tourismData);
+        console.log('Products data:', productsData);
+        
         setVillages(villagesData);
         setTourismSpots(tourismData);
         setProducts(productsData);
@@ -300,8 +305,8 @@ export default function ExplorePage() {
                   transition={{ delay: 0.2 }}
                 >
                   <SectionHeader 
-                    title="Produk Pilihan"
-                    subtitle={`${filteredData.products.length} produk UMKM`}
+                    title="Produk UMKM"
+                    subtitle={`${filteredData.products.length} produk pilihan`}
                     href="/products"
                     icon={<ShoppingBag className="h-4 w-4" />}
                   />
@@ -326,16 +331,15 @@ export default function ExplorePage() {
           </AnimatePresence>
         )}
       </div>
-
-      {/* Filter Sheet */}
+      
       <FilterSheet 
-        isOpen={isFilterOpen}
+        isOpen={isFilterOpen} 
         onClose={() => setIsFilterOpen(false)}
         filters={filters}
-        onApplyFilters={setFilters}
+        onFiltersChange={setFilters}
         availableDistricts={availableDistricts}
       />
-
+      
       <FloatingCartButton />
       <BottomNav />
     </div>

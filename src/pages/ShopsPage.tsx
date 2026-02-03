@@ -2,14 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, Store, Star, MapPin, ChevronRight } from 'lucide-react';
-import { Header } from '@/components/layout/Header';
-import { BottomNav } from '@/components/layout/BottomNav';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { ShopFilterSheet, type ShopFilters } from '@/components/shop/ShopFilterSheet';
-import { supabase } from '@/integrations/supabase/client';
-import { useUserLocation, calculateDistance } from '@/hooks/useUserLocation';
+import { Header } from '../components/layout/Header';
+import { BottomNav } from '../components/layout/BottomNav';
+import { Input } from '../components/ui/input';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { ShopFilterSheet, type ShopFilters } from '../components/shop/ShopFilterSheet';
+import { supabase } from '../integrations/supabase/client';
+import { useUserLocation, calculateDistance } from '../hooks/useUserLocation';
 
 interface ShopData {
   id: string;
@@ -45,6 +45,7 @@ export default function ShopsPage() {
   useEffect(() => {
     async function fetchShops() {
       try {
+        console.log('Fetching shops from Supabase...');
         // Fetch merchants with their products and location
         const { data: merchantsData, error } = await supabase
           .from('merchants')
@@ -53,10 +54,11 @@ export default function ShopsPage() {
             village_id, location_lat, location_lng,
             villages(name, location_lat, location_lng),
             products(id, category)
-          `)
-          .eq('status', 'ACTIVE')
-          .eq('registration_status', 'APPROVED');
+          `);
+          // .eq('status', 'ACTIVE')
+          // .eq('registration_status', 'APPROVED');
 
+        console.log('Shops raw data result:', merchantsData);
         if (error) throw error;
 
         const mappedShops: ShopData[] = (merchantsData || []).map((m) => {
@@ -91,6 +93,7 @@ export default function ShopsPage() {
           };
         });
 
+        console.log('Mapped shops data:', mappedShops);
         setShops(mappedShops);
       } catch (error) {
         console.error('Error fetching shops:', error);
@@ -309,64 +312,41 @@ export default function ShopsPage() {
                               {shop.name}
                             </h3>
                             {shop.badge && (
-                              <Badge variant="secondary" className="text-[10px] px-1.5">
+                              <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-primary/10 text-primary border-none">
                                 {shop.badge}
                               </Badge>
                             )}
                           </div>
-                          {shop.villageName && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                              <MapPin className="h-3 w-3" />
-                              <span className="truncate">{shop.villageName}</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                            <MapPin className="h-3 w-3" />
+                            <span className="truncate">{shop.villageName || 'Lokasi tidak tersedia'}</span>
+                          </div>
                         </div>
-                        <div
-                          className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                            shop.isOpen
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}
-                        >
-                          {shop.isOpen ? 'Buka' : 'Tutup'}
+                        <div className="flex items-center gap-1 bg-secondary/50 px-1.5 py-0.5 rounded-md flex-shrink-0">
+                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                          <span className="text-xs font-medium">{shop.ratingAvg.toFixed(1)}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 mt-2">
-                        <div className="flex items-center gap-1 text-sm">
-                          <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
-                          <span className="font-medium">{shop.ratingAvg.toFixed(1)}</span>
-                          <span className="text-muted-foreground text-xs">
-                            ({shop.ratingCount})
-                          </span>
-                        </div>
-                        <span className="text-muted-foreground text-xs">
-                          {shop.productCount} produk
-                        </span>
-                      </div>
-
-                      {/* Categories */}
-                      {shop.categories.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {shop.categories.slice(0, 3).map((cat) => (
-                            <Badge
-                              key={cat}
-                              variant="outline"
-                              className="text-[10px] px-1.5 py-0 capitalize"
-                            >
+                      <div className="mt-3 flex items-center justify-between">
+                        <div className="flex gap-1.5 overflow-hidden">
+                          {shop.categories.slice(0, 2).map((cat) => (
+                            <span key={cat} className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded capitalize whitespace-nowrap">
                               {cat}
-                            </Badge>
+                            </span>
                           ))}
-                          {shop.categories.length > 3 && (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                              +{shop.categories.length - 3}
-                            </Badge>
+                          {shop.categories.length > 2 && (
+                            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                              +{shop.categories.length - 2}
+                            </span>
                           )}
                         </div>
-                      )}
+                        <div className="flex items-center gap-1 text-primary text-xs font-medium">
+                          <span>Lihat Toko</span>
+                          <ChevronRight className="h-3 w-3" />
+                        </div>
+                      </div>
                     </div>
-
-                    <ChevronRight className="h-5 w-5 text-muted-foreground self-center flex-shrink-0" />
                   </div>
                 </Link>
               </motion.div>
