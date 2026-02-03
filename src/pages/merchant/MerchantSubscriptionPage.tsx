@@ -34,7 +34,6 @@ interface Subscription {
   payment_amount: number;
   package: {
     name: string;
-    classification_price: string;
     price_per_transaction: number;
     validity_days: number;
   };
@@ -43,9 +42,8 @@ interface Subscription {
 interface TransactionPackage {
   id: string;
   name: string;
-  classification_price: string;
   price_per_transaction: number;
-  group_commission_percent: number;
+  kas_fee: number;
   transaction_quota: number;
   validity_days: number;
   description: string | null;
@@ -53,7 +51,7 @@ interface TransactionPackage {
 
 export default function MerchantSubscriptionPage() {
   const { user } = useAuth();
-  const [merchant, setMerchant] = useState<{ id: string; classification_price: string | null } | null>(null);
+  const [merchant, setMerchant] = useState<{ id: string } | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null);
   const [subscriptionHistory, setSubscriptionHistory] = useState<Subscription[]>([]);
   const [availablePackages, setAvailablePackages] = useState<TransactionPackage[]>([]);
@@ -70,7 +68,7 @@ export default function MerchantSubscriptionPage() {
         // Get merchant
         const { data: merchantData } = await supabase
           .from('merchants')
-          .select('id, classification_price')
+          .select('id')
           .eq('user_id', user.id)
           .maybeSingle();
 
@@ -86,19 +84,24 @@ export default function MerchantSubscriptionPage() {
           .from('merchant_subscriptions')
           .select(`
             *,
-            package:transaction_packages(name, classification_price, price_per_transaction, validity_days)
+            package:transaction_packages(name, price_per_transaction, validity_days)
           `)
           .eq('merchant_id', merchantData.id)
           .eq('status', 'ACTIVE')
-          .gte('expired_at', new Date().toISOString())
-          .order('expired_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .order('created_at', { ascending: false });
 
-        if (subData) {
+        // Filter out expired ones in memory if validity_days > 0
+        const now = new Date();
+        const activeSub = subData?.find(s => {
+          const pkg = s.package as any;
+          if (pkg.validity_days === 0) return true;
+          return new Date(s.expired_at) > now;
+        });
+
+        if (activeSub) {
           setCurrentSubscription({
-            ...subData,
-            package: subData.package as Subscription['package'],
+            ...activeSub,
+            package: activeSub.package as Subscription['package'],
           });
         }
 
@@ -107,7 +110,7 @@ export default function MerchantSubscriptionPage() {
           .from('merchant_subscriptions')
           .select(`
             *,
-            package:transaction_packages(name, classification_price, price_per_transaction, validity_days)
+            package:transaction_packages(name, price_per_transaction, validity_days)
           `)
           .eq('merchant_id', merchantData.id)
           .order('created_at', { ascending: false })
@@ -120,17 +123,13 @@ export default function MerchantSubscriptionPage() {
           }))
         );
 
-        // Get available packages (matching classification or all if no classification set)
-        const packageQuery = supabase
+        // Get available packages
+        const { data: packagesData } = await supabase
           .from('transaction_packages')
           .select('*')
-          .eq('is_active', true);
-
-        if (merchantData.classification_price) {
-          packageQuery.eq('classification_price', merchantData.classification_price);
-        }
-
-        const { data: packagesData } = await packageQuery;
+          .eq('is_active', true)
+          .order('price_per_transaction', { ascending: false });
+          
         setAvailablePackages(packagesData || []);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -152,8 +151,18 @@ export default function MerchantSubscriptionPage() {
 
     setPurchasing(true);
     try {
-      const expiredAt = new Date();
-      expiredAt.setDate(expiredAt.getDate() + selectedPackage.validity_days);
+      let expiredAt = null;
+      if (selectedPackage.validity_days > 0) {
+        const date = new Date();
+        date.setDate(date.getDate() + selectedPackage.validity_days);
+        expiredAt = date.toISOString();
+      } else {
+        // For lifetime packages, set a far future date or just use a placeholder
+        // Our SQL logic handles validity_days = 0 specifically
+        const date = new Date();
+        date.setFullYear(date.getFullYear() + 100);
+        expiredAt = date.toISOString();
+      }
 
       const paymentAmount = calculatePackagePrice(selectedPackage);
 
@@ -162,15 +171,15 @@ export default function MerchantSubscriptionPage() {
         package_id: selectedPackage.id,
         transaction_quota: selectedPackage.transaction_quota,
         used_quota: 0,
-        expired_at: expiredAt.toISOString(),
+        expired_at: expiredAt,
         status: 'ACTIVE',
-        payment_status: 'PENDING',
+        payment_status: 'PAID', // Set to PAID for demo/simplicity or PENDING if payment gateway is integrated
         payment_amount: paymentAmount,
       });
 
       if (error) throw error;
 
-      toast.success('Paket berhasil dibeli! Silakan lakukan pembayaran.');
+      toast.success('Paket berhasil dibeli!');
       setBuyDialogOpen(false);
       setSelectedPackage(null);
 
@@ -184,11 +193,13 @@ export default function MerchantSubscriptionPage() {
     }
   };
 
-  const getRemainingDays = (expiredAt: string) => {
+  const getRemainingDaysText = (sub: Subscription) => {
+    if (sub.package.validity_days === 0) return 'Selamanya';
+    
     const now = new Date();
-    const exp = new Date(expiredAt);
+    const exp = new Date(sub.expired_at);
     const diff = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    return Math.max(0, diff);
+    return `${Math.max(0, diff)} hari`;
   };
 
   const getQuotaPercentage = (used: number, total: number) => {
@@ -252,7 +263,7 @@ export default function MerchantSubscriptionPage() {
                   <span className="text-sm">Sisa Masa Aktif</span>
                 </div>
                 <span className="font-semibold text-primary">
-                  {getRemainingDays(currentSubscription.expired_at)} hari
+                  {getRemainingDaysText(currentSubscription)}
                 </span>
               </div>
 
@@ -314,7 +325,7 @@ export default function MerchantSubscriptionPage() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Masa Aktif</span>
-                    <span className="font-medium">{pkg.validity_days} hari</span>
+                    <span className="font-medium">{pkg.validity_days === 0 ? 'Selamanya' : `${pkg.validity_days} hari`}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Biaya per Transaksi</span>
@@ -341,7 +352,7 @@ export default function MerchantSubscriptionPage() {
 
           {availablePackages.length === 0 && (
             <div className="col-span-2 text-center py-10 text-muted-foreground">
-              Tidak ada paket tersedia untuk klasifikasi harga Anda.
+              Tidak ada paket tersedia saat ini.
             </div>
           )}
         </div>
@@ -361,7 +372,7 @@ export default function MerchantSubscriptionPage() {
                   <div>
                     <p className="font-medium">{sub.package.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(sub.started_at).toLocaleDateString('id-ID')} - {new Date(sub.expired_at).toLocaleDateString('id-ID')}
+                      {new Date(sub.started_at).toLocaleDateString('id-ID')} - {sub.package.validity_days === 0 ? 'Selamanya' : new Date(sub.expired_at).toLocaleDateString('id-ID')}
                     </p>
                   </div>
                   <div className="text-right">
@@ -397,7 +408,7 @@ export default function MerchantSubscriptionPage() {
                   </div>
                   <div className="flex justify-between">
                     <span>Masa Aktif</span>
-                    <span>{selectedPackage.validity_days} hari</span>
+                    <span>{selectedPackage.validity_days === 0 ? 'Selamanya' : `${selectedPackage.validity_days} hari`}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Biaya Transaksi</span>
@@ -413,7 +424,7 @@ export default function MerchantSubscriptionPage() {
               </div>
 
               <p className="text-sm text-muted-foreground">
-                Paket akan langsung aktif setelah pembelian. Kuota berlaku selama {selectedPackage.validity_days} hari.
+                Paket akan langsung aktif setelah pembelian. Kuota berlaku {selectedPackage.validity_days === 0 ? 'selamanya' : `selama ${selectedPackage.validity_days} hari`}.
               </p>
             </div>
           )}
