@@ -8,20 +8,20 @@ import {
   Store, Phone, MapPin, ArrowLeft, CheckCircle, Clock, CreditCard, 
   Tag, FileText, MapPinned, Building, Shield, AlertCircle, Check
 } from 'lucide-react';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { BottomNav } from '@/components/layout/BottomNav';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
+import { PageHeader } from '../components/layout/PageHeader';
+import { BottomNav } from '../components/layout/BottomNav';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
+import { Label } from '../components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   fetchProvinces, fetchRegencies, fetchDistricts, fetchVillages,
   type Region
-} from '@/lib/addressApi';
-import type { Village } from '@/types';
+} from '../lib/addressApi';
+import type { Village } from '../types';
 
 const merchantSchema = z.object({
   referralCode: z.string().max(50).optional(),
@@ -173,12 +173,12 @@ export default function RegisterMerchantPage() {
       setVillageLoading(true);
       try {
         const subdistrictName = subdistrictsList.find(s => s.code === selectedSubdistrict)?.name || '';
+        console.log('Searching for village match with name:', subdistrictName);
+        
         const { data, error } = await supabase
           .from('villages')
           .select('*')
-          .eq('is_active', true)
-          .eq('registration_status', 'APPROVED')
-          .or(`district.ilike.%${subdistrictName}%,subdistrict.ilike.%${subdistrictName}%`)
+          .or(`name.ilike.%${subdistrictName}%,district.ilike.%${subdistrictName}%,subdistrict.ilike.%${subdistrictName}%`)
           .limit(1);
 
         if (error) throw error;
@@ -279,6 +279,8 @@ export default function RegisterMerchantPage() {
         status: 'PENDING',
         order_mode: 'ADMIN_ASSISTED',
         is_open: false,
+        open_time: data.openTime,
+        close_time: data.closeTime,
       });
 
       if (error) throw error;
@@ -286,7 +288,7 @@ export default function RegisterMerchantPage() {
       toast.success('Pendaftaran pedagang berhasil dikirim!');
     } catch (error: any) {
       console.error('Registration error:', error);
-      toast.error(error.message || 'Gagal mendaftar pedagang');
+      toast.error(error.message || 'Terjadi kesalahan saat mendaftar');
     } finally {
       setIsSubmitting(false);
     }

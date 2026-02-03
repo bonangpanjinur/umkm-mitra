@@ -14,14 +14,14 @@ import {
   Check,
   Badge as BadgeIcon
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ProductCard } from '@/components/ProductCard';
-import { supabase } from '@/integrations/supabase/client';
-import { VerifiedBadge } from '@/components/merchant/VerifiedBadge';
-import { MerchantClosedBanner, MerchantStatusBadge } from '@/components/merchant/MerchantClosedBanner';
-import { getMerchantOperatingStatus, formatTime } from '@/lib/merchantOperatingHours';
-import type { Product } from '@/types';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { ProductCard } from '../components/ProductCard';
+import { supabase } from '../integrations/supabase/client';
+import { VerifiedBadge } from '../components/merchant/VerifiedBadge';
+import { MerchantClosedBanner, MerchantStatusBadge } from '../components/merchant/MerchantClosedBanner';
+import { getMerchantOperatingStatus, formatTime } from '../lib/merchantOperatingHours';
+import type { Product } from '../types';
 
 interface MerchantData {
   id: string;
@@ -152,24 +152,6 @@ export default function MerchantProfilePage() {
     }
   };
 
-  const getBadgeVariant = (badge: string | null) => {
-    switch (badge) {
-      case 'VERIFIED': return 'default';
-      case 'POPULAR': return 'secondary';
-      case 'NEW': return 'outline';
-      default: return 'outline';
-    }
-  };
-
-  const getBadgeLabel = (badge: string | null) => {
-    switch (badge) {
-      case 'VERIFIED': return 'Terverifikasi';
-      case 'POPULAR': return 'Populer';
-      case 'NEW': return 'Baru';
-      default: return null;
-    }
-  };
-
   const handleWhatsAppClick = () => {
     if (merchant?.phone) {
       const phone = merchant.phone.replace(/\D/g, '');
@@ -277,7 +259,7 @@ export default function MerchantProfilePage() {
                   </div>
                 </div>
 
-                {/* Open Status - uses operating hours logic */}
+                {/* Open Status */}
                 <MerchantStatusBadge
                   isManuallyOpen={merchant.is_open}
                   openTime={merchant.open_time}
@@ -285,23 +267,6 @@ export default function MerchantProfilePage() {
                   size="md"
                 />
               </div>
-
-              {/* Closed Banner */}
-              {(() => {
-                const status = getMerchantOperatingStatus(merchant.is_open, merchant.open_time, merchant.close_time);
-                if (!status.isCurrentlyOpen) {
-                  return (
-                    <div className="mt-4 pt-4 border-t border-border">
-                      <MerchantClosedBanner
-                        isManuallyOpen={merchant.is_open}
-                        openTime={merchant.open_time}
-                        closeTime={merchant.close_time}
-                      />
-                    </div>
-                  );
-                }
-                return null;
-              })()}
 
               {/* Quick Info */}
               <div className="flex gap-4 mt-4 pt-4 border-t border-border">
@@ -331,21 +296,27 @@ export default function MerchantProfilePage() {
             )}
 
             {/* Address */}
-            {merchant.address && (
-              <div className="bg-card rounded-2xl p-4 shadow-sm border border-border mb-4">
-                <h3 className="font-semibold text-foreground mb-2">Alamat</h3>
-                <p className="text-sm text-muted-foreground">
+            <div className="bg-card rounded-2xl p-4 shadow-sm border border-border mb-4">
+              <h3 className="font-semibold text-foreground mb-2">Alamat</h3>
+              {merchant.address && (
+                <p className="text-sm text-muted-foreground mb-1">
                   {merchant.address}
                 </p>
-                {(merchant.subdistrict || merchant.district || merchant.city) && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {[merchant.subdistrict, merchant.district, merchant.city, merchant.province]
-                      .filter(Boolean)
-                      .join(', ')}
-                  </p>
-                )}
-              </div>
-            )}
+              )}
+              {(merchant.subdistrict || merchant.district || merchant.city) && (
+                <p className="text-xs text-muted-foreground">
+                  {[merchant.subdistrict, merchant.district, merchant.city, merchant.province]
+                    .filter(Boolean)
+                    .join(', ')}
+                </p>
+              )}
+              {merchant.villages?.name && (
+                <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
+                  <Building className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-xs font-medium text-primary">Desa Wisata: {merchant.villages.name}</span>
+                </div>
+              )}
+            </div>
 
             {/* Tabs */}
             <div className="flex gap-2 mb-4">
