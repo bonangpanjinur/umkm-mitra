@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { MapPin, Navigation, Loader2, LocateFixed } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { MapPin, Loader2, LocateFixed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { calculateDistance } from '@/lib/codSecurity';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 
 // Fix for default marker icon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -32,12 +31,14 @@ function MapClickHandler({ onLocationSelect }: { onLocationSelect: (lat: number,
   return null;
 }
 
-// Component to recenter map
-function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
+// Component to recenter map when value changes
+function MapUpdater({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
+  
   useEffect(() => {
-    map.setView([lat, lng], map.getZoom());
+    map.setView([lat, lng], map.getZoom(), { animate: true });
   }, [lat, lng, map]);
+  
   return null;
 }
 
@@ -50,11 +51,10 @@ export function LocationPicker({
 }: LocationPickerProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mapReady, setMapReady] = useState(false);
   
   // Default center (Tasikmalaya)
   const defaultCenter = { lat: -7.3274, lng: 108.2207 };
-  const currentCenter = value || defaultCenter;
+  const mapCenter = value || defaultCenter;
 
   // Calculate distance when location changes
   useEffect(() => {
@@ -134,13 +134,41 @@ export function LocationPicker({
         <p className="text-xs text-destructive">{error}</p>
       )}
 
-      {/* OpenStreetMap */}
-      <div className="rounded-lg border border-border overflow-hidden" style={{ height: '250px' }}>
+      {/* OpenStreetMap Container */}
+      <div 
+        className="relative rounded-lg border border-border overflow-hidden bg-muted"
+        style={{ height: '220px', width: '100%' }}
+      >
+        <style>
+          {`
+            .leaflet-container {
+              height: 100% !important;
+              width: 100% !important;
+              z-index: 1;
+            }
+            .leaflet-tile-pane {
+              z-index: 1;
+            }
+            .leaflet-overlay-pane {
+              z-index: 2;
+            }
+            .leaflet-marker-pane {
+              z-index: 3;
+            }
+            .leaflet-control-container {
+              z-index: 4;
+            }
+            .leaflet-tile {
+              position: absolute;
+            }
+          `}
+        </style>
         <MapContainer
-          center={[currentCenter.lat, currentCenter.lng]}
+          center={[mapCenter.lat, mapCenter.lng]}
           zoom={15}
-          style={{ height: '100%', width: '100%' }}
-          whenReady={() => setMapReady(true)}
+          scrollWheelZoom={true}
+          style={{ height: '100%', width: '100%', position: 'absolute', top: 0, left: 0 }}
+          attributionControl={true}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -150,27 +178,27 @@ export function LocationPicker({
           {value && (
             <>
               <Marker position={[value.lat, value.lng]} />
-              <RecenterMap lat={value.lat} lng={value.lng} />
+              <MapUpdater lat={value.lat} lng={value.lng} />
             </>
           )}
         </MapContainer>
       </div>
 
       {/* Location status */}
-      <div className="rounded-lg border border-border p-3 bg-secondary/30">
+      <div className="rounded-lg border border-border p-3 bg-card">
         {value ? (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-primary">
               <MapPin className="h-4 w-4" />
               <span className="text-sm font-medium">Lokasi Dipilih</span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {value.lat.toFixed(6)}, {value.lng.toFixed(6)}
+            <p className="text-xs text-muted-foreground font-mono">
+              {value.lat.toFixed(5)}, {value.lng.toFixed(5)}
             </p>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground text-center">
-            Klik pada peta atau gunakan "Lokasi Saya" untuk menentukan titik pengiriman
+          <p className="text-sm text-muted-foreground text-center py-1">
+            Klik pada peta atau gunakan tombol "Lokasi Saya"
           </p>
         )}
       </div>
