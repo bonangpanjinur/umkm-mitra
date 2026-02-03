@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Receipt, Check, X, Package, MoreHorizontal, User, MapPin, Phone, Truck, CreditCard, MessageSquare, Printer, RefreshCw, Wifi } from 'lucide-react';
+import { Receipt, Check, X, Package, MoreHorizontal, User, MapPin, Phone, Truck, CreditCard, MessageSquare, Printer, RefreshCw, Wifi, Search, Download, TrendingUp, Clock, CheckCircle2 } from 'lucide-react';
 import { MerchantLayout } from '@/components/merchant/MerchantLayout';
 import { DataTable } from '@/components/admin/DataTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -269,8 +270,17 @@ export default function MerchantOrdersPage() {
             )}
             {item.status === 'PROCESSED' && (
               <DropdownMenuItem onClick={() => handleUpdateStatus(item.id, 'SENT')}>
-                <Truck className="h-4 w-4 mr-2" />
-                Kirim
+                {item.delivery_type === 'PICKUP' ? (
+                  <>
+                    <Package className="h-4 w-4 mr-2" />
+                    Siap Diambil
+                  </>
+                ) : (
+                  <>
+                    <Truck className="h-4 w-4 mr-2" />
+                    Kirim
+                  </>
+                )}
               </DropdownMenuItem>
             )}
             {item.status === 'SENT' && (
@@ -307,10 +317,90 @@ export default function MerchantOrdersPage() {
     },
   ];
 
-  const newOrdersCount = orders.filter(o => o.status === 'NEW').length;
+  const stats = {
+    new: orders.filter(o => o.status === 'NEW').length,
+    processed: orders.filter(o => o.status === 'PROCESSED').length,
+    sent: orders.filter(o => o.status === 'SENT').length,
+    done: orders.filter(o => o.status === 'DONE').length,
+    total_revenue: orders.filter(o => o.status === 'DONE').reduce((acc, curr) => acc + curr.total, 0)
+  };
+
+  const handleExport = (data: OrderRow[]) => {
+    const headers = ['ID Pesanan', 'Pelanggan', 'Telepon', 'Total', 'Status', 'Pembayaran', 'Metode', 'Tipe Pengiriman', 'Tanggal'];
+    const csvData = data.map(order => [
+      `#${order.id.slice(0, 8).toUpperCase()}`,
+      order.delivery_name || '-',
+      order.delivery_phone || '-',
+      order.total,
+      order.status,
+      order.payment_status || '-',
+      order.payment_method || '-',
+      order.delivery_type,
+      new Date(order.created_at).toLocaleDateString('id-ID')
+    ]);
+
+    const csvContent = [headers, ...csvData].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `pesanan-merchant-${new Date().toISOString().slice(0,10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <MerchantLayout title="Pesanan" subtitle="Kelola pesanan masuk">
+      {/* Stats Overview */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <Card className="bg-info/5 border-info/20">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="h-10 w-10 rounded-full bg-info/10 flex items-center justify-center text-info">
+              <Package className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">Pesanan Baru</p>
+              <p className="text-2xl font-bold">{stats.new}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-warning/5 border-warning/20">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="h-10 w-10 rounded-full bg-warning/10 flex items-center justify-center text-warning">
+              <Clock className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">Diproses</p>
+              <p className="text-2xl font-bold">{stats.processed}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-success/5 border-success/20">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center text-success">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">Selesai</p>
+              <p className="text-2xl font-bold">{stats.done}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <TrendingUp className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">Pendapatan</p>
+              <p className="text-lg font-bold">{formatPrice(stats.total_revenue)}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="flex items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2">
           <Receipt className="h-5 w-5 text-primary" />
@@ -338,10 +428,12 @@ export default function MerchantOrdersPage() {
       <DataTable
         data={orders}
         columns={columns}
-        searchKey="delivery_name"
-        searchPlaceholder="Cari nama pelanggan..."
+        searchKeys={['id', 'delivery_name', 'delivery_phone']}
+        searchPlaceholder="Cari ID, nama, atau telepon..."
         filters={filters}
         loading={loading}
+        onRowClick={viewOrderDetail}
+        onExport={handleExport}
         emptyMessage="Belum ada pesanan"
       />
 

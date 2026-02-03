@@ -397,8 +397,8 @@ export default function AdminOrdersPage() {
           <DataTable
             data={orders}
             columns={columns}
-            searchPlaceholder="Cari ID, pelanggan, atau merchant..."
-            searchKeys={['id', 'delivery_name']} // Merchant name is nested, so we'll handle it if needed or just use these
+            searchKeys={['id', 'delivery_name', 'delivery_phone']}
+            searchPlaceholder="Cari ID, pelanggan, atau telepon..."
             filters={filters}
             loading={loading}
             onExport={handleExport}
