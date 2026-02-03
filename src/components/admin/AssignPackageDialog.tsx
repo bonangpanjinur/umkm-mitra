@@ -20,7 +20,7 @@ import { addDays } from 'date-fns';
 interface TransactionPackage {
   id: string;
   name: string;
-  price_per_transaction: number;
+  total_price: number;
   transaction_quota: number;
   validity_days: number;
   description: string | null;
@@ -71,7 +71,7 @@ export function AssignPackageDialog({
         .from('transaction_packages')
         .select('*')
         .eq('is_active', true)
-        .order('transaction_quota', { ascending: true });
+        .order('total_price', { ascending: true });
 
       if (packagesError) throw packagesError;
       setPackages(packagesData || []);
@@ -113,7 +113,7 @@ export function AssignPackageDialog({
       const startDate = new Date();
       // If validity_days is 0, set a very far future date or handle in DB
       const expiredAt = selectedPkg.validity_days === 0 
-        ? addDays(startDate, 3650) // 10 years as "forever"
+        ? addDays(startDate, 36500) // 100 years as "forever"
         : addDays(startDate, selectedPkg.validity_days);
 
       // Create new subscription
@@ -128,7 +128,7 @@ export function AssignPackageDialog({
           expired_at: expiredAt.toISOString(),
           status: 'ACTIVE',
           payment_status: 'PAID', // Admin assigns directly = already paid
-          payment_amount: selectedPkg.price_per_transaction * selectedPkg.transaction_quota,
+          payment_amount: selectedPkg.total_price,
           paid_at: new Date().toISOString(),
         })
         .select()
@@ -189,10 +189,10 @@ export function AssignPackageDialog({
           <div className="space-y-4 py-2">
             {/* Current subscription info */}
             {currentSubscription && (
-              <div className="p-3 bg-info/10 border border-info/20 rounded-lg">
-                <p className="text-sm font-medium text-info mb-1">Paket Aktif Saat Ini</p>
+              <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                <p className="text-sm font-medium text-blue-700 mb-1">Paket Aktif Saat Ini</p>
                 <p className="text-sm text-muted-foreground">
-                  Sisa kuota: {currentSubscription.transaction_quota - currentSubscription.used_quota} kuota
+                  Sisa kuota: {currentSubscription.transaction_quota - currentSubscription.used_quota} Kredit
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Berakhir: {new Date(currentSubscription.expired_at).toLocaleDateString('id-ID')}
@@ -223,10 +223,10 @@ export function AssignPackageDialog({
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <p className="font-medium">{pkg.name}</p>
-                          <Badge variant="secondary">{pkg.transaction_quota} kuota</Badge>
+                          <Badge variant="secondary">{pkg.transaction_quota} Kredit</Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
-                          {formatPrice(pkg.price_per_transaction)}/transaksi • {pkg.validity_days === 0 ? 'Tanpa Masa Aktif' : `${pkg.validity_days} hari`}
+                          {formatPrice(pkg.total_price)} • {pkg.validity_days === 0 ? 'Tanpa Masa Aktif' : `${pkg.validity_days} hari`}
                         </p>
                         {pkg.description && (
                           <p className="text-xs text-muted-foreground mt-1">{pkg.description}</p>
@@ -240,8 +240,8 @@ export function AssignPackageDialog({
 
             {/* Summary */}
             {selectedPackage && (
-              <div className="p-3 bg-success/10 border border-success/20 rounded-lg">
-                <p className="text-sm font-medium text-success flex items-center gap-1">
+              <div className="p-3 bg-green-50 border border-green-100 rounded-lg">
+                <p className="text-sm font-medium text-green-700 flex items-center gap-1">
                   <CreditCard className="h-4 w-4" />
                   Ringkasan
                 </p>
@@ -252,15 +252,15 @@ export function AssignPackageDialog({
                   </div>
                   <div className="flex justify-between">
                     <span>Kuota</span>
-                    <span>{selectedPackage.transaction_quota} kuota</span>
+                    <span>{selectedPackage.transaction_quota} Kredit</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Masa Aktif</span>
                     <span>{selectedPackage.validity_days === 0 ? 'Selamanya' : `${selectedPackage.validity_days} hari`}</span>
                   </div>
                   <div className="flex justify-between font-medium pt-2 border-t">
-                    <span>Total Nilai</span>
-                    <span>{formatPrice(selectedPackage.price_per_transaction * selectedPackage.transaction_quota)}</span>
+                    <span>Total Harga</span>
+                    <span>{formatPrice(selectedPackage.total_price)}</span>
                   </div>
                 </div>
               </div>
