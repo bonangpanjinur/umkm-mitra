@@ -34,17 +34,18 @@ interface Subscription {
   payment_amount: number;
   package: {
     name: string;
-    total_price: number;
+    price_per_transaction: number;
+    transaction_quota: number;
     validity_days: number;
-    kas_fee: number;
+    group_commission_percent: number;
   };
 }
 
 interface TransactionPackage {
   id: string;
   name: string;
-  total_price: number;
-  kas_fee: number;
+  price_per_transaction: number;
+  group_commission_percent: number;
   transaction_quota: number;
   validity_days: number;
   description: string | null;
@@ -85,7 +86,7 @@ export default function MerchantSubscriptionPage() {
           .from('merchant_subscriptions')
           .select(`
             *,
-            package:transaction_packages(name, total_price, validity_days, kas_fee)
+            package:transaction_packages(name, price_per_transaction, transaction_quota, validity_days, group_commission_percent)
           `)
           .eq('merchant_id', merchantData.id)
           .eq('status', 'ACTIVE')
@@ -111,7 +112,7 @@ export default function MerchantSubscriptionPage() {
           .from('merchant_subscriptions')
           .select(`
             *,
-            package:transaction_packages(name, total_price, validity_days, kas_fee)
+            package:transaction_packages(name, price_per_transaction, transaction_quota, validity_days, group_commission_percent)
           `)
           .eq('merchant_id', merchantData.id)
           .order('created_at', { ascending: false })
@@ -129,9 +130,9 @@ export default function MerchantSubscriptionPage() {
           .from('transaction_packages')
           .select('*')
           .eq('is_active', true)
-          .order('total_price', { ascending: true });
+          .order('price_per_transaction', { ascending: true });
           
-        setAvailablePackages(packagesData || []);
+        setAvailablePackages((packagesData || []) as TransactionPackage[]);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('Gagal memuat data');
@@ -165,10 +166,10 @@ export default function MerchantSubscriptionPage() {
         transaction_quota: selectedPackage.transaction_quota,
         used_quota: 0,
         expired_at: expiredAt,
-        status: 'ACTIVE',
-        payment_status: 'PAID',
-        payment_amount: selectedPackage.total_price,
-      });
+          status: 'ACTIVE',
+          payment_status: 'PAID',
+          payment_amount: selectedPackage.transaction_quota * selectedPackage.price_per_transaction,
+        });
 
       if (error) throw error;
 
@@ -272,7 +273,7 @@ export default function MerchantSubscriptionPage() {
                 <div className="p-3 bg-background rounded-lg">
                   <p className="text-muted-foreground">Komisi Kelompok</p>
                   <p className="font-bold text-xl">
-                    {currentSubscription.package.kas_fee}%
+                    {currentSubscription.package.group_commission_percent}%
                   </p>
                 </div>
               </div>
@@ -322,13 +323,13 @@ export default function MerchantSubscriptionPage() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Komisi Kelompok</span>
-                    <span className="font-medium">{pkg.kas_fee}%</span>
+                    <span className="font-medium">{pkg.group_commission_percent}%</span>
                   </div>
                   <div className="border-t pt-3">
                     <div className="flex justify-between">
                       <span className="font-medium">Harga Paket</span>
                       <span className="font-bold text-primary">
-                        {formatPrice(pkg.total_price)}
+                        {formatPrice(pkg.transaction_quota * pkg.price_per_transaction)}
                       </span>
                     </div>
                   </div>
@@ -405,12 +406,12 @@ export default function MerchantSubscriptionPage() {
                   </div>
                   <div className="flex justify-between">
                     <span>Komisi Kelompok</span>
-                    <span>{selectedPackage.kas_fee}%</span>
+                    <span>{selectedPackage.group_commission_percent}%</span>
                   </div>
                   <div className="border-t pt-2 font-semibold flex justify-between">
                     <span>Total Bayar</span>
                     <span className="text-primary">
-                      {formatPrice(selectedPackage.total_price)}
+                      {formatPrice(selectedPackage.transaction_quota * selectedPackage.price_per_transaction)}
                     </span>
                   </div>
                 </div>

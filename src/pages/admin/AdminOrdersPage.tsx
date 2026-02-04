@@ -86,7 +86,7 @@ export default function AdminOrdersPage() {
       .channel('admin-orders-changes')
       .on(
         'postgres_changes',
-        { event: '*', table: 'orders' },
+        { event: '*', schema: 'public', table: 'orders' },
         () => {
           fetchOrders();
         }

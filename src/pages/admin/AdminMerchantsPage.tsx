@@ -220,7 +220,7 @@ export default function AdminMerchantsPage() {
       <DataTable
         data={merchants}
         columns={columns}
-        searchKey="name"
+        searchKeys={['name']}
         searchPlaceholder="Cari nama merchant..."
         filters={filters}
         loading={loading}

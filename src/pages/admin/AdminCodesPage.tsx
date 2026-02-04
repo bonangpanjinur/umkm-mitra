@@ -271,7 +271,7 @@ export default function AdminCodesPage() {
       <DataTable
         data={codes}
         columns={columns}
-        searchKey="code"
+        searchKeys={['code']}
         searchPlaceholder="Cari kode..."
         loading={loading}
         emptyMessage="Belum ada kode verifikator"

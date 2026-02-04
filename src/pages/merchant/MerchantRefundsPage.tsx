@@ -63,21 +63,24 @@ export default function MerchantRefundsPage() {
       const { data: merchant } = await supabase
         .from('merchants')
         .select('id')
-        .eq('owner_id', user.id)
-        .single();
+        .eq('user_id', user.id)
+        .maybeSingle();
 
       if (!merchant) return;
 
+      // refund_requests table doesn't have merchant_id column - filter via order join
       const { data, error } = await supabase
         .from('refund_requests')
-        .select('*, orders(total)')
-        .eq('merchant_id', merchant.id)
+        .select('*, orders!inner(total, merchant_id)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
+      // Filter to only this merchant's orders
+      const filteredData = (data || []).filter(r => (r.orders as any)?.merchant_id === merchant.id);
+
       // Fetch buyer names
-      const buyerIds = [...new Set((data || []).map(r => r.buyer_id))];
+      const buyerIds = [...new Set(filteredData.map(r => r.buyer_id))];
       const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, full_name')
@@ -85,7 +88,7 @@ export default function MerchantRefundsPage() {
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p.full_name]) || []);
 
-      const mapped: RefundRequest[] = (data || []).map(r => ({
+      const mapped: RefundRequest[] = filteredData.map(r => ({
         id: r.id,
         orderId: r.order_id,
         buyerId: r.buyer_id,
@@ -95,7 +98,7 @@ export default function MerchantRefundsPage() {
         adminNotes: r.admin_notes,
         createdAt: r.created_at,
         buyerName: profileMap.get(r.buyer_id) || 'Unknown',
-        evidenceUrls: r.evidence_urls || [],
+        evidenceUrls: [],
       }));
 
       setRefunds(mapped);

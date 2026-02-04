@@ -12,7 +12,8 @@ import {
   ShoppingBag,
   MessageCircle,
   Check,
-  Badge as BadgeIcon
+  Badge as BadgeIcon,
+  Building
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';

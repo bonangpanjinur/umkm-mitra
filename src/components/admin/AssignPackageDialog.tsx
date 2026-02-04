@@ -20,7 +20,9 @@ import { addDays } from 'date-fns';
 interface TransactionPackage {
   id: string;
   name: string;
-  total_price: number;
+  classification_price: string;
+  price_per_transaction: number;
+  group_commission_percent: number;
   transaction_quota: number;
   validity_days: number;
   description: string | null;
@@ -71,10 +73,10 @@ export function AssignPackageDialog({
         .from('transaction_packages')
         .select('*')
         .eq('is_active', true)
-        .order('total_price', { ascending: true });
+        .order('price_per_transaction', { ascending: true });
 
       if (packagesError) throw packagesError;
-      setPackages(packagesData || []);
+      setPackages((packagesData || []) as TransactionPackage[]);
 
       // Fetch current subscription
       const { data: subData, error: subError } = await supabase
@@ -111,6 +113,7 @@ export function AssignPackageDialog({
     setLoading(true);
     try {
       const startDate = new Date();
+      const totalPrice = selectedPkg.transaction_quota * selectedPkg.price_per_transaction;
       // If validity_days is 0, set a very far future date or handle in DB
       const expiredAt = selectedPkg.validity_days === 0 
         ? addDays(startDate, 36500) // 100 years as "forever"
@@ -128,7 +131,7 @@ export function AssignPackageDialog({
           expired_at: expiredAt.toISOString(),
           status: 'ACTIVE',
           payment_status: 'PAID', // Admin assigns directly = already paid
-          payment_amount: selectedPkg.total_price,
+          payment_amount: totalPrice,
           paid_at: new Date().toISOString(),
         })
         .select()
@@ -226,7 +229,7 @@ export function AssignPackageDialog({
                           <Badge variant="secondary">{pkg.transaction_quota} Kredit</Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
-                          {formatPrice(pkg.total_price)} • {pkg.validity_days === 0 ? 'Tanpa Masa Aktif' : `${pkg.validity_days} hari`}
+                          {formatPrice(pkg.transaction_quota * pkg.price_per_transaction)} • {pkg.validity_days === 0 ? 'Tanpa Masa Aktif' : `${pkg.validity_days} hari`}
                         </p>
                         {pkg.description && (
                           <p className="text-xs text-muted-foreground mt-1">{pkg.description}</p>
@@ -260,7 +263,7 @@ export function AssignPackageDialog({
                   </div>
                   <div className="flex justify-between font-medium pt-2 border-t">
                     <span>Total Harga</span>
-                    <span>{formatPrice(selectedPackage.total_price)}</span>
+                    <span>{formatPrice(selectedPackage.transaction_quota * selectedPackage.price_per_transaction)}</span>
                   </div>
                 </div>
               </div>

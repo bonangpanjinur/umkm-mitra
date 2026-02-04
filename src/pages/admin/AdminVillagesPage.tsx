@@ -59,11 +59,18 @@ export default function AdminVillagesPage() {
       setLoading(true);
       const { data, error } = await supabase
         .from('villages')
-        .select('id, name, province, regency, district, subdistrict, description, contact_name, contact_phone, contact_email, registration_status, is_active, registered_at')
+        .select('id, name, regency, district, subdistrict, description, contact_name, contact_phone, contact_email, registration_status, is_active, registered_at')
         .order('registered_at', { ascending: false });
 
       if (error) throw error;
-      setVillages(data || []);
+      
+      // Map data to match interface, default province to empty string
+      const mapped = (data || []).map(v => ({
+        ...v,
+        province: '', // villages table doesn't have province column
+      })) as VillageRow[];
+      
+      setVillages(mapped);
     } catch (error) {
       console.error('Error fetching villages:', error);
       toast.error('Gagal memuat data desa');
@@ -250,7 +257,7 @@ export default function AdminVillagesPage() {
       <DataTable
         data={villages}
         columns={columns}
-        searchKey="name"
+        searchKeys={['name']}
         searchPlaceholder="Cari nama desa..."
         filters={filters}
         loading={loading}

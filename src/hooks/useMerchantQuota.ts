@@ -117,7 +117,7 @@ export function useMerchantQuota(merchantIds: string[]) {
 // Function to use merchant quota after successful order
 export async function useMerchantQuotaForOrder(merchantId: string, credits: number = 1): Promise<boolean> {
   try {
-    const { data, error } = await supabase.rpc('use_merchant_quota_v2', {
+    const { data, error } = await supabase.rpc('use_merchant_quota', {
       p_merchant_id: merchantId,
       p_credits: credits,
     });

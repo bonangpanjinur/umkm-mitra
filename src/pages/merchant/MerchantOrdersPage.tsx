@@ -407,8 +407,8 @@ export default function MerchantOrdersPage() {
           <span className="text-muted-foreground text-sm">
             {orders.length} pesanan
           </span>
-          {newOrdersCount > 0 && (
-            <Badge variant="info">{newOrdersCount} baru</Badge>
+          {orders.filter(o => o.status === 'NEW').length > 0 && (
+            <Badge variant="info">{orders.filter(o => o.status === 'NEW').length} baru</Badge>
           )}
         </div>
         <div className="flex items-center gap-2">

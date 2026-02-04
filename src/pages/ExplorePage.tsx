@@ -336,7 +336,7 @@ export default function ExplorePage() {
         isOpen={isFilterOpen} 
         onClose={() => setIsFilterOpen(false)}
         filters={filters}
-        onFiltersChange={setFilters}
+        onApplyFilters={setFilters}
         availableDistricts={availableDistricts}
       />
       

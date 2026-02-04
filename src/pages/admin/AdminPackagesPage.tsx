@@ -34,8 +34,9 @@ import { formatPrice } from '@/lib/utils';
 interface TransactionPackage {
   id: string;
   name: string;
-  total_price: number;
-  kas_fee: number;
+  classification_price: string;
+  price_per_transaction: number;
+  group_commission_percent: number;
   transaction_quota: number;
   validity_days: number;
   description: string | null;
@@ -49,8 +50,9 @@ export default function AdminPackagesPage() {
   const [editingPackage, setEditingPackage] = useState<TransactionPackage | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    total_price: 25000,
-    kas_fee: 10,
+    classification_price: 'UNDER_5K',
+    price_per_transaction: 500,
+    group_commission_percent: 10,
     transaction_quota: 50,
     validity_days: 30,
     description: '',
@@ -62,10 +64,10 @@ export default function AdminPackagesPage() {
       const { data, error } = await supabase
         .from('transaction_packages')
         .select('*')
-        .order('total_price', { ascending: true });
+        .order('price_per_transaction', { ascending: true });
 
       if (error) throw error;
-      setPackages(data || []);
+      setPackages((data || []) as TransactionPackage[]);
     } catch (error) {
       console.error('Error fetching packages:', error);
       toast.error('Gagal memuat data paket');
@@ -128,8 +130,9 @@ export default function AdminPackagesPage() {
     setEditingPackage(pkg);
     setFormData({
       name: pkg.name,
-      total_price: pkg.total_price,
-      kas_fee: pkg.kas_fee,
+      classification_price: pkg.classification_price,
+      price_per_transaction: pkg.price_per_transaction,
+      group_commission_percent: pkg.group_commission_percent,
       transaction_quota: pkg.transaction_quota,
       validity_days: pkg.validity_days,
       description: pkg.description || '',
@@ -142,13 +145,19 @@ export default function AdminPackagesPage() {
     setEditingPackage(null);
     setFormData({
       name: '',
-      total_price: 25000,
-      kas_fee: 10,
+      classification_price: 'UNDER_5K',
+      price_per_transaction: 500,
+      group_commission_percent: 10,
       transaction_quota: 50,
       validity_days: 30,
       description: '',
       is_active: true,
     });
+  };
+
+  // Calculate total price based on transaction quota and price per transaction
+  const calculateTotalPrice = (pkg: TransactionPackage) => {
+    return pkg.transaction_quota * pkg.price_per_transaction;
   };
 
   return (
@@ -161,12 +170,6 @@ export default function AdminPackagesPage() {
           </span>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link to="/admin/quota-settings">
-              <Settings className="h-4 w-4 mr-2" />
-              Pengaturan Kuota
-            </Link>
-          </Button>
           <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
             <Plus className="h-4 w-4 mr-2" />
             Tambah Paket
@@ -174,13 +177,12 @@ export default function AdminPackagesPage() {
         </div>
       </div>
 
-      <Alert className="mb-6 bg-blue-50 border-blue-200">
-        <Info className="h-4 w-4 text-blue-600" />
-        <AlertTitle className="text-blue-800">Informasi Relasi Kuota</AlertTitle>
-        <AlertDescription className="text-blue-700">
+      <Alert className="mb-6 border-primary/20 bg-primary/5">
+        <Info className="h-4 w-4 text-primary" />
+        <AlertTitle className="text-foreground">Informasi Paket</AlertTitle>
+        <AlertDescription className="text-muted-foreground">
           Paket ini menentukan berapa banyak <strong>total kuota (kredit)</strong> yang didapat merchant. 
-          Biaya kuota per transaksi (berapa kredit yang berkurang) diatur secara dinamis di menu 
-          <Link to="/admin/quota-settings" className="font-bold underline ml-1">Pengaturan Kuota</Link>.
+          Harga paket dihitung dari kuota × harga per transaksi.
         </AlertDescription>
       </Alert>
 
@@ -200,7 +202,7 @@ export default function AdminPackagesPage() {
                   </div>
                   <div className="flex gap-1">
                     {pkg.is_active ? (
-                      <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Aktif</Badge>
+                      <Badge variant="success">Aktif</Badge>
                     ) : (
                       <Badge variant="secondary">Nonaktif</Badge>
                     )}
@@ -211,11 +213,11 @@ export default function AdminPackagesPage() {
                 <div className="grid grid-cols-2 gap-3 text-sm mb-4">
                   <div>
                     <p className="text-muted-foreground">Harga Paket</p>
-                    <p className="font-bold text-primary">{formatPrice(pkg.total_price)}</p>
+                    <p className="font-bold text-primary">{formatPrice(calculateTotalPrice(pkg))}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Komisi Kelompok</p>
-                    <p className="font-bold">{pkg.kas_fee}%</p>
+                    <p className="font-bold">{pkg.group_commission_percent}%</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Total Kuota</p>
@@ -266,22 +268,22 @@ export default function AdminPackagesPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="total_price">Harga Paket (Rp)</Label>
+                <Label htmlFor="price_per_transaction">Harga per Transaksi (Rp)</Label>
                 <Input
-                  id="total_price"
+                  id="price_per_transaction"
                   type="number"
-                  value={formData.total_price}
-                  onChange={(e) => setFormData({ ...formData, total_price: Number(e.target.value) })}
+                  value={formData.price_per_transaction}
+                  onChange={(e) => setFormData({ ...formData, price_per_transaction: Number(e.target.value) })}
                 />
               </div>
               <div>
-                <Label htmlFor="kas_fee">Komisi Kelompok (%)</Label>
+                <Label htmlFor="group_commission_percent">Komisi Kelompok (%)</Label>
                 <Input
-                  id="kas_fee"
+                  id="group_commission_percent"
                   type="number"
                   step="0.01"
-                  value={formData.kas_fee}
-                  onChange={(e) => setFormData({ ...formData, kas_fee: Number(e.target.value) })}
+                  value={formData.group_commission_percent}
+                  onChange={(e) => setFormData({ ...formData, group_commission_percent: Number(e.target.value) })}
                 />
               </div>
             </div>

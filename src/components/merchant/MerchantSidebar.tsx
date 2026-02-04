@@ -44,7 +44,7 @@ export function MerchantSidebar() {
       const { data: merchant } = await supabase
         .from('merchants')
         .select('id')
-        .eq('owner_id', user.id)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (merchant) {
