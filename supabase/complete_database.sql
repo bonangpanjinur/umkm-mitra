@@ -11,7 +11,7 @@ BEGIN
 END $$;
 
 -- 2. Create user_roles table (separate from profiles for security)
-CREATE TABLE public.user_roles (
+CREATE TABLE IF NOT EXISTS public.user_roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     role app_role NOT NULL DEFAULT 'buyer',
@@ -19,7 +19,7 @@ CREATE TABLE public.user_roles (
 );
 
 -- 3. Create profiles table
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
     full_name TEXT NOT NULL DEFAULT '',
@@ -31,7 +31,7 @@ CREATE TABLE public.profiles (
 );
 
 -- 4. Create villages table
-CREATE TABLE public.villages (
+CREATE TABLE IF NOT EXISTS public.villages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     district TEXT NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE public.villages (
 );
 
 -- 5. Create merchants table
-CREATE TABLE public.merchants (
+CREATE TABLE IF NOT EXISTS public.merchants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     village_id UUID REFERENCES public.villages(id) ON DELETE SET NULL,
@@ -65,7 +65,7 @@ CREATE TABLE public.merchants (
 );
 
 -- 6. Create products table
-CREATE TABLE public.products (
+CREATE TABLE IF NOT EXISTS public.products (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     merchant_id UUID REFERENCES public.merchants(id) ON DELETE CASCADE NOT NULL,
     name TEXT NOT NULL,
@@ -81,7 +81,7 @@ CREATE TABLE public.products (
 );
 
 -- 7. Create tourism table
-CREATE TABLE public.tourism (
+CREATE TABLE IF NOT EXISTS public.tourism (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     village_id UUID REFERENCES public.villages(id) ON DELETE CASCADE NOT NULL,
     name TEXT NOT NULL,
@@ -98,7 +98,7 @@ CREATE TABLE public.tourism (
 );
 
 -- 8. Create orders table
-CREATE TABLE public.orders (
+CREATE TABLE IF NOT EXISTS public.orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     buyer_id UUID REFERENCES auth.users(id) ON DELETE SET NULL NOT NULL,
     merchant_id UUID REFERENCES public.merchants(id) ON DELETE SET NULL,
@@ -117,7 +117,7 @@ CREATE TABLE public.orders (
 );
 
 -- 9. Create order_items table
-CREATE TABLE public.order_items (
+CREATE TABLE IF NOT EXISTS public.order_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID REFERENCES public.orders(id) ON DELETE CASCADE NOT NULL,
     product_id UUID REFERENCES public.products(id) ON DELETE SET NULL,
@@ -134,6 +134,7 @@ CREATE TABLE public.order_items (
 
 -- Function to check if user has a specific role
 DROP FUNCTION IF EXISTS public.has_role(uuid, app_role);
+DROP FUNCTION IF EXISTS public.has_role(UUID, app_role);
 CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role app_role)
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -150,6 +151,7 @@ AS $$
 $$;
 
 -- Function to check if current user is admin
+DROP FUNCTION IF EXISTS public.is_admin();
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -161,6 +163,7 @@ AS $$
 $$;
 
 -- Function to update updated_at timestamp
+DROP FUNCTION IF EXISTS public.update_updated_at_column();
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -195,6 +198,7 @@ CREATE TRIGGER update_orders_updated_at
     EXECUTE FUNCTION public.update_updated_at_column();
 
 -- Auto-create profile and buyer role on signup
+DROP FUNCTION IF EXISTS public.handle_new_user();
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -365,6 +369,7 @@ ADD COLUMN IF NOT EXISTS contact_phone text,
 ADD COLUMN IF NOT EXISTS contact_email text;
 
 -- Create helper function to check if user is verifikator
+DROP FUNCTION IF EXISTS public.is_verifikator();
 CREATE OR REPLACE FUNCTION public.is_verifikator()
 RETURNS boolean
 LANGUAGE sql
@@ -468,7 +473,7 @@ VALUES
   ('00000000-0000-0000-0000-000000000000', 'KRIYA2024', 'Kelompok Kerajinan Tangan', 'Kode referral untuk pengrajin'),
   ('00000000-0000-0000-0000-000000000000', 'FASHION2024', 'Kelompok Fashion Lokal', 'Kode referral untuk pedagang fashion')
 ON CONFLICT (code) DO NOTHING;-- Create promotions/ads table for various ad types
-CREATE TABLE public.promotions (
+CREATE TABLE IF NOT EXISTS public.promotions (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   type TEXT NOT NULL CHECK (type IN ('banner', 'wisata_populer', 'produk_populer', 'promo_spesial')),
   title TEXT NOT NULL,
@@ -552,7 +557,7 @@ INSERT INTO public.promotions (type, title, subtitle, image_url, link_url, link_
 ('banner', 'Jelajahi Produk Asli Desa', 'Dukung UMKM lokal & ekonomi desa Indonesia', NULL, '/products', 'category', 'admin', true, 1),
 ('banner', 'Wisata Desa Bojong', 'Nikmati keindahan alam dan budaya desa', NULL, '/tourism', 'category', 'admin', true, 2),
 ('banner', 'Promo Spesial Akhir Bulan', 'Diskon hingga 30% untuk produk pilihan', NULL, '/products', 'category', 'admin', true, 3);-- Create couriers table for village delivery persons
-CREATE TABLE public.couriers (
+CREATE TABLE IF NOT EXISTS public.couriers (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID,
     name TEXT NOT NULL,
@@ -590,7 +595,7 @@ CREATE TABLE public.couriers (
 );
 
 -- Create app_settings table for dynamic configuration
-CREATE TABLE public.app_settings (
+CREATE TABLE IF NOT EXISTS public.app_settings (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     key TEXT NOT NULL UNIQUE,
     value JSONB NOT NULL DEFAULT '{}',
@@ -707,6 +712,7 @@ USING (courier_id IN (SELECT id FROM couriers WHERE user_id = auth.uid()));-- Ad
 ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'merchant';
 ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'courier';
 ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'admin_desa';-- Create helper functions for role checking
+DROP FUNCTION IF EXISTS public.get_user_roles(uuid);
 CREATE OR REPLACE FUNCTION public.get_user_roles(_user_id uuid)
 RETURNS text[]
 LANGUAGE sql
@@ -718,6 +724,7 @@ AS $$
   WHERE user_id = _user_id
 $$;
 
+DROP FUNCTION IF EXISTS public.has_any_role(uuid, app_role[]);
 CREATE OR REPLACE FUNCTION public.has_any_role(_user_id uuid, _roles app_role[])
 RETURNS boolean
 LANGUAGE sql
@@ -733,6 +740,7 @@ AS $$
 $$;
 
 -- Function to check if user is merchant
+DROP FUNCTION IF EXISTS public.is_merchant();
 CREATE OR REPLACE FUNCTION public.is_merchant()
 RETURNS boolean
 LANGUAGE sql
@@ -743,6 +751,7 @@ AS $$
 $$;
 
 -- Function to check if user is courier
+DROP FUNCTION IF EXISTS public.is_courier();
 CREATE OR REPLACE FUNCTION public.is_courier()
 RETURNS boolean
 LANGUAGE sql
@@ -753,6 +762,7 @@ AS $$
 $$;
 
 -- Function to check if user is admin desa
+DROP FUNCTION IF EXISTS public.is_admin_desa();
 CREATE OR REPLACE FUNCTION public.is_admin_desa()
 RETURNS boolean
 LANGUAGE sql
@@ -1010,7 +1020,7 @@ ADD COLUMN IF NOT EXISTS blocked_by uuid,
 ADD COLUMN IF NOT EXISTS block_reason text;
 
 -- Create refund_requests table
-CREATE TABLE public.refund_requests (
+CREATE TABLE IF NOT EXISTS public.refund_requests (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id uuid REFERENCES public.orders(id) ON DELETE CASCADE NOT NULL,
     buyer_id uuid NOT NULL,
@@ -1025,7 +1035,7 @@ CREATE TABLE public.refund_requests (
 );
 
 -- Create admin_audit_logs table
-CREATE TABLE public.admin_audit_logs (
+CREATE TABLE IF NOT EXISTS public.admin_audit_logs (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     admin_id uuid NOT NULL,
     action text NOT NULL,
@@ -1290,6 +1300,7 @@ END;
 $$;
 
 -- Function to update trust score after COD result
+DROP FUNCTION IF EXISTS public.update_trust_score();
 CREATE OR REPLACE FUNCTION public.update_trust_score()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -1326,6 +1337,7 @@ CREATE TRIGGER trigger_update_trust_score
   EXECUTE FUNCTION update_trust_score();
 
 -- Function to auto-cancel pending confirmation orders
+DROP FUNCTION IF EXISTS public.auto_cancel_pending_orders();
 CREATE OR REPLACE FUNCTION public.auto_cancel_pending_orders()
 RETURNS void
 LANGUAGE plpgsql
@@ -1416,6 +1428,7 @@ END;
 $$;
 
 -- Trigger to notify merchant when order status changes
+DROP FUNCTION IF EXISTS public.notify_order_change();
 CREATE OR REPLACE FUNCTION public.notify_order_change()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -1478,6 +1491,7 @@ FOR EACH ROW
 EXECUTE FUNCTION notify_order_change();
 
 -- Trigger to notify merchant on withdrawal status change
+DROP FUNCTION IF EXISTS public.notify_withdrawal_change();
 CREATE OR REPLACE FUNCTION public.notify_withdrawal_change()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -1528,6 +1542,7 @@ FOR EACH ROW
 EXECUTE FUNCTION notify_withdrawal_change();
 
 -- Trigger to notify on merchant verification
+DROP FUNCTION IF EXISTS public.notify_merchant_verification();
 CREATE OR REPLACE FUNCTION public.notify_merchant_verification()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -1566,6 +1581,7 @@ FOR EACH ROW
 EXECUTE FUNCTION notify_merchant_verification();
 
 -- Trigger to notify admin on new withdrawal request
+DROP FUNCTION IF EXISTS public.notify_admin_new_withdrawal();
 CREATE OR REPLACE FUNCTION public.notify_admin_new_withdrawal()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -1601,7 +1617,7 @@ CREATE TRIGGER admin_withdrawal_notification_trigger
 AFTER INSERT ON withdrawal_requests
 FOR EACH ROW
 EXECUTE FUNCTION notify_admin_new_withdrawal();-- Transaction Packages Table (paket_transaksi)
-CREATE TABLE public.transaction_packages (
+CREATE TABLE IF NOT EXISTS public.transaction_packages (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   classification_price TEXT NOT NULL,
@@ -1616,7 +1632,7 @@ CREATE TABLE public.transaction_packages (
 );
 
 -- Merchant Subscriptions Table (langganan pedagang)
-CREATE TABLE public.merchant_subscriptions (
+CREATE TABLE IF NOT EXISTS public.merchant_subscriptions (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
   package_id UUID NOT NULL REFERENCES public.transaction_packages(id),
@@ -1683,6 +1699,7 @@ INSERT INTO public.transaction_packages (name, classification_price, price_per_t
 ('Paket UMKM Premium', 'ABOVE_20K', 1500, 2500, 150, 30, 'Untuk produk harga diatas Rp 20.000');
 
 -- Function to check and decrement quota
+DROP FUNCTION IF EXISTS public.check_merchant_quota(UUID);
 CREATE OR REPLACE FUNCTION public.check_merchant_quota(p_merchant_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -1719,6 +1736,7 @@ END;
 $$;
 
 -- Function to use quota (call after successful order)
+DROP FUNCTION IF EXISTS public.use_merchant_quota(UUID);
 CREATE OR REPLACE FUNCTION public.use_merchant_quota(p_merchant_id UUID)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -1747,7 +1765,7 @@ CREATE TRIGGER update_merchant_subscriptions_updated_at
 BEFORE UPDATE ON public.merchant_subscriptions
 FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at_column();-- Create trade_groups table
-CREATE TABLE public.trade_groups (
+CREATE TABLE IF NOT EXISTS public.trade_groups (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
@@ -1760,7 +1778,7 @@ CREATE TABLE public.trade_groups (
 );
 
 -- Create group_members table (linking merchants to groups)
-CREATE TABLE public.group_members (
+CREATE TABLE IF NOT EXISTS public.group_members (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   group_id UUID NOT NULL REFERENCES public.trade_groups(id) ON DELETE CASCADE,
   merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
@@ -1770,7 +1788,7 @@ CREATE TABLE public.group_members (
 );
 
 -- Create kas_payments table for monthly fee tracking
-CREATE TABLE public.kas_payments (
+CREATE TABLE IF NOT EXISTS public.kas_payments (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   group_id UUID NOT NULL REFERENCES public.trade_groups(id) ON DELETE CASCADE,
   merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
@@ -1855,6 +1873,7 @@ ON public.kas_payments FOR ALL
 USING (is_admin());
 
 -- Create function to generate monthly kas records for all group members
+DROP FUNCTION IF EXISTS public.generate_monthly_kas(UUID, INTEGER, INTEGER);
 CREATE OR REPLACE FUNCTION public.generate_monthly_kas(p_group_id UUID, p_month INTEGER, p_year INTEGER)
 RETURNS INTEGER
 LANGUAGE plpgsql
@@ -1907,7 +1926,7 @@ ALTER TABLE public.transaction_packages
 COMMENT ON COLUMN public.transaction_packages.group_commission_percent IS 'Percentage of package price that goes to the trade group/verifikator';
 
 -- Create table to track verifikator earnings from package purchases
-CREATE TABLE public.verifikator_earnings (
+CREATE TABLE IF NOT EXISTS public.verifikator_earnings (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   verifikator_id UUID NOT NULL,
   merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
@@ -1938,6 +1957,7 @@ ALTER TABLE public.merchants
   ADD COLUMN IF NOT EXISTS group_id UUID REFERENCES public.trade_groups(id) ON DELETE SET NULL;
 
 -- Function to auto-assign merchant to trade group when registering with verifikator code
+DROP FUNCTION IF EXISTS public.auto_assign_merchant_to_group();
 CREATE OR REPLACE FUNCTION public.auto_assign_merchant_to_group()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -1980,6 +2000,7 @@ CREATE TRIGGER trigger_auto_assign_merchant_group
   EXECUTE FUNCTION public.auto_assign_merchant_to_group();
 
 -- Function to calculate and record commission when subscription is paid
+DROP FUNCTION IF EXISTS public.record_verifikator_commission();
 CREATE OR REPLACE FUNCTION public.record_verifikator_commission()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -2033,7 +2054,7 @@ CREATE TRIGGER trigger_record_verifikator_commission
   AFTER INSERT OR UPDATE ON public.merchant_subscriptions
   FOR EACH ROW
   EXECUTE FUNCTION public.record_verifikator_commission();-- Create verifikator_withdrawals table for withdrawal requests
-CREATE TABLE public.verifikator_withdrawals (
+CREATE TABLE IF NOT EXISTS public.verifikator_withdrawals (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   verifikator_id UUID NOT NULL,
   amount INTEGER NOT NULL,
@@ -2434,7 +2455,7 @@ ON public.merchants
 FOR SELECT
 TO anon
 USING (status = 'ACTIVE' AND registration_status = 'APPROVED');-- Create push_subscriptions table for storing web push subscriptions
-CREATE TABLE public.push_subscriptions (
+CREATE TABLE IF NOT EXISTS public.push_subscriptions (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   endpoint TEXT NOT NULL,
@@ -2466,7 +2487,7 @@ ON public.push_subscriptions FOR UPDATE
 USING (auth.uid() = user_id);
 
 -- Create password_reset_tokens table
-CREATE TABLE public.password_reset_tokens (
+CREATE TABLE IF NOT EXISTS public.password_reset_tokens (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   email TEXT NOT NULL,
   token TEXT NOT NULL UNIQUE,
@@ -2484,7 +2505,7 @@ ALTER TABLE public.password_reset_tokens ENABLE ROW LEVEL SECURITY;
 CREATE INDEX idx_push_subscriptions_user_id ON public.push_subscriptions(user_id);
 CREATE INDEX idx_password_reset_tokens_token ON public.password_reset_tokens(token);
 CREATE INDEX idx_password_reset_tokens_email ON public.password_reset_tokens(email);-- Create saved_addresses table for storing multiple addresses per user
-CREATE TABLE public.saved_addresses (
+CREATE TABLE IF NOT EXISTS public.saved_addresses (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL,
   label TEXT NOT NULL DEFAULT 'Rumah',
@@ -2539,7 +2560,7 @@ CREATE TRIGGER update_saved_addresses_updated_at
 BEFORE UPDATE ON public.saved_addresses
 FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at_column();-- Create vouchers/coupons table
-CREATE TABLE public.vouchers (
+CREATE TABLE IF NOT EXISTS public.vouchers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
@@ -2560,7 +2581,7 @@ CREATE TABLE public.vouchers (
 );
 
 -- Create voucher usage tracking
-CREATE TABLE public.voucher_usages (
+CREATE TABLE IF NOT EXISTS public.voucher_usages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   voucher_id UUID NOT NULL REFERENCES public.vouchers(id) ON DELETE CASCADE,
   user_id UUID NOT NULL,
@@ -2570,7 +2591,7 @@ CREATE TABLE public.voucher_usages (
 );
 
 -- Create SEO settings table
-CREATE TABLE public.seo_settings (
+CREATE TABLE IF NOT EXISTS public.seo_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   page_path TEXT NOT NULL UNIQUE,
   title TEXT,
@@ -2587,7 +2608,7 @@ CREATE TABLE public.seo_settings (
 );
 
 -- Create backup logs table
-CREATE TABLE public.backup_logs (
+CREATE TABLE IF NOT EXISTS public.backup_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   backup_type TEXT NOT NULL DEFAULT 'manual',
   status TEXT NOT NULL DEFAULT 'pending',
@@ -2601,7 +2622,7 @@ CREATE TABLE public.backup_logs (
 );
 
 -- Create rate limit tracking table
-CREATE TABLE public.rate_limits (
+CREATE TABLE IF NOT EXISTS public.rate_limits (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   identifier TEXT NOT NULL,
   action TEXT NOT NULL,
@@ -3602,6 +3623,7 @@ COMMENT ON TABLE public.transaction_packages IS 'Paket kuota transaksi yang dapa
 -- This fixes the issue where data might not load due to permission errors
 
 -- 1. Ensure the is_verifikator function exists (referenced in previous migrations but let's be sure)
+DROP FUNCTION IF EXISTS public.is_verifikator();
 CREATE OR REPLACE FUNCTION public.is_verifikator()
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -3653,6 +3675,7 @@ CREATE INDEX IF NOT EXISTS idx_couriers_village_id ON public.couriers(village_id
 
 -- 1. Pastikan fungsi is_admin ada (untuk memperbaiki error 42883)
 -- Fungsi ini mengecek apakah user memiliki role 'admin' di tabel user_roles
+DROP FUNCTION IF EXISTS public.is_admin();
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -3757,6 +3780,7 @@ BEGIN
 END $$;
 
 -- 10. Update fungsi kalkulasi biaya kredit (kredit per transaksi)
+DROP FUNCTION IF EXISTS public.calculate_item_credit_cost(INTEGER);
 CREATE OR REPLACE FUNCTION public.calculate_item_credit_cost(p_price INTEGER)
 RETURNS INTEGER
 LANGUAGE plpgsql
@@ -3777,6 +3801,7 @@ END;
 $$;
 
 -- 11. Update fungsi use_merchant_quota_v2 untuk mendukung pengurangan kuota dinamis
+DROP FUNCTION IF EXISTS public.use_merchant_quota_v2(UUID, INTEGER);
 CREATE OR REPLACE FUNCTION public.use_merchant_quota_v2(p_merchant_id UUID, p_credits INTEGER)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -3811,6 +3836,7 @@ END;
 $$;
 
 -- 12. Update fungsi check_merchant_quota untuk mendukung logika baru
+DROP FUNCTION IF EXISTS public.check_merchant_quota(UUID);
 CREATE OR REPLACE FUNCTION public.check_merchant_quota(p_merchant_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -3915,7 +3941,7 @@ FOR SELECT USING (
 -- We will replace the use_merchant_quota function.
 
 -- 1. Create table for Quota Tiers Configuration
-CREATE TABLE public.quota_tiers (
+CREATE TABLE IF NOT EXISTS public.quota_tiers (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   min_price INTEGER NOT NULL,
   max_price INTEGER, -- NULL means no upper limit
@@ -3950,6 +3976,7 @@ INSERT INTO public.quota_tiers (min_price, max_price, credit_cost) VALUES
 COMMENT ON COLUMN public.transaction_packages.transaction_quota IS 'Total credits provided by this package';
 
 -- 3. Create a function to calculate credit cost based on product price
+DROP FUNCTION IF EXISTS public.calculate_order_credit_cost(UUID);
 CREATE OR REPLACE FUNCTION public.calculate_order_credit_cost(p_order_id UUID)
 RETURNS INTEGER
 LANGUAGE plpgsql
@@ -3982,6 +4009,7 @@ END;
 $$;
 
 -- 4. Update use_merchant_quota to accept credit amount
+DROP FUNCTION IF EXISTS public.use_merchant_quota_v2(UUID, INTEGER);
 CREATE OR REPLACE FUNCTION public.use_merchant_quota_v2(p_merchant_id UUID, p_credits INTEGER)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -4014,6 +4042,7 @@ END;
 $$;
 
 -- 5. Keep the old use_merchant_quota for backward compatibility but update it to use 1 credit
+DROP FUNCTION IF EXISTS public.use_merchant_quota(UUID);
 CREATE OR REPLACE FUNCTION public.use_merchant_quota(p_merchant_id UUID)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -4119,6 +4148,7 @@ BEGIN
 END $$;
 
 -- 7. Update fungsi kalkulasi biaya kredit (kredit per transaksi)
+DROP FUNCTION IF EXISTS public.calculate_item_credit_cost(INTEGER);
 CREATE OR REPLACE FUNCTION public.calculate_item_credit_cost(p_price INTEGER)
 RETURNS INTEGER
 LANGUAGE plpgsql
@@ -4139,6 +4169,7 @@ END;
 $$;
 
 -- 8. Update fungsi use_merchant_quota_v2 untuk mendukung pengurangan kuota dinamis
+DROP FUNCTION IF EXISTS public.use_merchant_quota_v2(UUID, INTEGER);
 CREATE OR REPLACE FUNCTION public.use_merchant_quota_v2(p_merchant_id UUID, p_credits INTEGER)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -4173,6 +4204,7 @@ END;
 $$;
 
 -- 9. Update fungsi check_merchant_quota untuk mendukung logika baru
+DROP FUNCTION IF EXISTS public.check_merchant_quota(UUID);
 CREATE OR REPLACE FUNCTION public.check_merchant_quota(p_merchant_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
