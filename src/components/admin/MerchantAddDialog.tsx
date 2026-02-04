@@ -326,6 +326,10 @@ export function MerchantAddDialog({
         status: 'ACTIVE',
         registration_status: 'APPROVED',
         village_id: '',
+        badge: 'none',
+        order_mode: 'ADMIN_ASSISTED',
+        is_verified: false,
+        image_url: '',
       });
     } catch (error) {
       console.error('Error adding merchant:', error);

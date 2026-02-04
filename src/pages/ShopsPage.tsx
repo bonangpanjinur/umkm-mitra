@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Store, Star, MapPin, ChevronRight } from '../components/layout/Header'; // Note: ChevronRight might not be in Header, but I'll fix imports below
+import { Search as SearchIcon, Store as StoreIcon, Star as StarIcon, MapPin as MapPinIcon, ChevronRight as ChevronRightIcon } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { BottomNav } from '../components/layout/BottomNav';
 import { Input } from '../components/ui/input';
@@ -10,9 +10,6 @@ import { Button } from '../components/ui/button';
 import { ShopFilterSheet, type ShopFilters } from '../components/shop/ShopFilterSheet';
 import { supabase } from '../integrations/supabase/client';
 import { useUserLocation, calculateDistance } from '../hooks/useUserLocation';
-
-// Correcting icons import
-import { Search as SearchIcon, Store as StoreIcon, Star as StarIcon, MapPin as MapPinIcon, ChevronRight as ChevronRightIcon } from 'lucide-react';
 
 interface ShopData {
   id: string;

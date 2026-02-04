@@ -332,7 +332,7 @@ export default function DesaTourismPage() {
       <DataTable
         data={filteredTourism}
         columns={columns}
-        searchKey="name"
+        searchKeys={['name']}
         searchPlaceholder="Cari nama wisata..."
         loading={loading}
         emptyMessage={filters.status !== 'all' || filters.facility ? "Tidak ada wisata sesuai filter" : "Belum ada wisata terdaftar"}

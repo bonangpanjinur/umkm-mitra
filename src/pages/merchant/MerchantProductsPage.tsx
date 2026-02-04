@@ -350,7 +350,7 @@ export default function MerchantProductsPage() {
       <DataTable
         data={products}
         columns={columns}
-        searchKey="name"
+        searchKeys={['name']}
         searchPlaceholder="Cari nama produk..."
         filters={filters}
         loading={loading}

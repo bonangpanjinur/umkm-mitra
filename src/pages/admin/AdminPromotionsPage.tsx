@@ -225,7 +225,7 @@ export default function AdminPromotionsPage() {
       <DataTable
         data={promotions}
         columns={columns}
-        searchKey="title"
+        searchKeys={['title']}
         searchPlaceholder="Cari judul promosi..."
         filters={filters}
         loading={loading}

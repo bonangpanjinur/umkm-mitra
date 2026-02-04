@@ -89,7 +89,7 @@ export default function AdminRefundsPage() {
         id: r.id,
         orderId: r.order_id,
         buyerId: r.buyer_id,
-        merchantId: r.merchant_id,
+        merchantId: (r.orders as any)?.merchant_id || '',
         amount: r.amount,
         reason: r.reason,
         status: r.status,
@@ -99,8 +99,8 @@ export default function AdminRefundsPage() {
         orderTotal: (r.orders as any)?.total || 0,
         buyerName: profileMap.get(r.buyer_id) || 'Unknown',
         merchantName: (r.orders as any)?.merchants?.name || 'Unknown Merchant',
-        evidenceUrls: r.evidence_urls || [],
-        refundType: r.refund_type || 'FULL',
+        evidenceUrls: [],
+        refundType: 'FULL',
       }));
 
       setRefunds(mapped);

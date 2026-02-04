@@ -207,7 +207,7 @@ export default function VerifikatorMerchantsPage() {
       <DataTable
         data={merchants}
         columns={columns}
-        searchKey="name"
+        searchKeys={['name']}
         searchPlaceholder="Cari nama merchant..."
         filters={filters}
         loading={loading}
