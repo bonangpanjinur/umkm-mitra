@@ -128,6 +128,7 @@ CREATE TABLE public.order_items (
 -- ============================================
 
 -- Function to check if user has a specific role
+DROP FUNCTION IF EXISTS public.has_role(uuid, app_role);
 CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role app_role)
 RETURNS BOOLEAN
 LANGUAGE sql
