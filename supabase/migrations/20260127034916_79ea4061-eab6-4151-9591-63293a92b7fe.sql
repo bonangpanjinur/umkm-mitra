@@ -3,7 +3,12 @@
 -- ============================================
 
 -- 1. Create app_role enum for user roles
-CREATE TYPE public.app_role AS ENUM ('admin', 'buyer');
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'app_role') THEN
+        CREATE TYPE public.app_role AS ENUM ('admin', 'buyer');
+    END IF;
+END $$;
 
 -- 2. Create user_roles table (separate from profiles for security)
 CREATE TABLE public.user_roles (
