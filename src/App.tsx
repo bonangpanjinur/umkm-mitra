@@ -94,6 +94,7 @@ import MerchantVouchersPage from "./pages/merchant/MerchantVouchersPage";
 import MerchantScheduledPromoPage from "./pages/merchant/MerchantScheduledPromoPage";
 import MerchantVisitorStatsPage from "./pages/merchant/MerchantVisitorStatsPage";
 import MerchantRefundsPage from "./pages/merchant/MerchantRefundsPage";
+import MerchantPOSPage from "./pages/merchant/MerchantPOSPage";
 
 // Desa Pages
 import DesaDashboardPage from "./pages/desa/DesaDashboardPage";
@@ -363,6 +364,11 @@ const App = () => (
               <Route path="/merchant" element={
                 <ProtectedRoute allowedRoles={['merchant', 'admin']}>
                   <MerchantDashboardPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/merchant/pos" element={
+                <ProtectedRoute allowedRoles={['merchant', 'admin']}>
+                  <MerchantPOSPage />
                 </ProtectedRoute>
               } />
               <Route path="/merchant/products" element={

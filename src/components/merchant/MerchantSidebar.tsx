@@ -66,14 +66,21 @@ export function MerchantSidebar() {
         
         setUnrepliedReviews(reviewsCount || 0);
 
-        // Pending refunds
-        const { count: refundsCount } = await supabase
-          .from('refund_requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('merchant_id', merchant.id)
-          .eq('status', 'PENDING');
+        // Pending refunds - refund_requests doesn't have merchant_id, join via orders
+        const { data: merchantOrders } = await supabase
+          .from('orders')
+          .select('id')
+          .eq('merchant_id', merchant.id);
         
-        setPendingRefunds(refundsCount || 0);
+        if (merchantOrders && merchantOrders.length > 0) {
+          const orderIds = merchantOrders.map(o => o.id);
+          const { count: refundsCount } = await supabase
+            .from('refund_requests')
+            .select('*', { count: 'exact', head: true })
+            .in('order_id', orderIds)
+            .eq('status', 'PENDING');
+          setPendingRefunds(refundsCount || 0);
+        }
       }
     };
     fetchBadges();
@@ -81,6 +88,7 @@ export function MerchantSidebar() {
 
   const menuItems: SidebarItem[] = [
     { label: 'Dashboard', href: '/merchant', icon: <LayoutDashboard className="h-4 w-4" /> },
+    { label: 'Kasir POS', href: '/merchant/pos', icon: <CreditCard className="h-4 w-4" /> },
     { label: 'Produk', href: '/merchant/products', icon: <Package className="h-4 w-4" /> },
     { label: 'Pesanan', href: '/merchant/orders', icon: <Receipt className="h-4 w-4" />, badge: pendingOrders },
     { label: 'Refund', href: '/merchant/refunds', icon: <RotateCcw className="h-4 w-4" />, badge: pendingRefunds },
