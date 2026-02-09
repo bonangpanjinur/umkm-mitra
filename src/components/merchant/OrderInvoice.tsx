@@ -147,45 +147,50 @@ export const OrderInvoice = forwardRef<HTMLDivElement, OrderInvoiceProps>(
 
 OrderInvoice.displayName = 'OrderInvoice';
 
-// Print function
+// Print function - uses in-app CSS @media print
 export function printInvoice(invoiceElement: HTMLElement | null) {
   if (!invoiceElement) return;
 
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert('Popup diblokir. Izinkan popup untuk mencetak.');
-    return;
+  // Add a temporary class to body to hide everything except the invoice
+  const printStyleId = 'pos-print-style';
+  let printStyle = document.getElementById(printStyleId) as HTMLStyleElement | null;
+  if (!printStyle) {
+    printStyle = document.createElement('style');
+    printStyle.id = printStyleId;
+    document.head.appendChild(printStyle);
   }
 
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Struk Pesanan</title>
-      <style>
-        body {
-          margin: 0;
-          padding: 20px;
-          font-family: monospace;
-          background: white;
-        }
-        @media print {
-          body { padding: 0; }
-        }
-      </style>
-    </head>
-    <body>
-      ${invoiceElement.outerHTML}
-      <script>
-        window.onload = function() {
-          window.print();
-          window.onafterprint = function() {
-            window.close();
-          };
-        };
-      </script>
-    </body>
-    </html>
-  `);
-  printWindow.document.close();
+  // Clone the invoice and append to body
+  const printContainer = document.createElement('div');
+  printContainer.id = 'print-invoice-container';
+  printContainer.appendChild(invoiceElement.cloneNode(true));
+  document.body.appendChild(printContainer);
+
+  printStyle.textContent = `
+    @media print {
+      body > *:not(#print-invoice-container) {
+        display: none !important;
+      }
+      #print-invoice-container {
+        display: block !important;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background: white;
+        z-index: 999999;
+        padding: 10px;
+      }
+      #print-invoice-container * {
+        color: black !important;
+        border-color: #333 !important;
+      }
+    }
+  `;
+
+  window.print();
+
+  // Cleanup after print
+  document.body.removeChild(printContainer);
+  printStyle.textContent = '';
 }
